@@ -1,0 +1,81 @@
+# GoReleaser config for the `inari` CLI.
+#
+# Invoked from .github/workflows/release.yml after a release-please Release PR
+# is merged (NOT via tag-push triggers). The Go scaffold lands in M4; the
+# ldflags below inject version info into `main.version`/`main.commit`/
+# `main.date` — M4 should declare these vars in package main (or adjust here).
+version: 2
+
+project_name: inari
+
+builds:
+  - id: inari
+    main: ./
+    binary: inari
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+archives:
+  - id: default
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_
+      {{- title .Os }}_{{ .Arch }}
+
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+  algorithm: sha256
+
+# CHANGELOG.md is owned by release-please; goreleaser does not regenerate it.
+changelog:
+  disable: true
+
+brews:
+  # Homebrew tap: 7K-Inari/homebrew-tap (assumed per platform plan §6; adjust
+  # if the tap repo name differs). Requires the HOMEBREW_TAP_GITHUB_TOKEN
+  # secret with write access to the tap repo.
+  - name: inari
+    repository:
+      owner: 7K-Inari
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    homepage: https://github.com/7K-Inari/inari-cli
+    description: "The inari CLI: login, cluster/catalog/resource ops, agent install, extension scaffolding"
+    license: Apache-2.0
+    install: |
+      bin.install "inari"
+
+scoops:
+  # Scoop bucket: 7K-Inari/scoop-bucket (assumed per platform plan §6).
+  - name: inari
+    repository:
+      owner: 7K-Inari
+      name: scoop-bucket
+      token: "{{ .Env.GITHUB_TOKEN }}"
+    directory: bucket
+    homepage: https://github.com/7K-Inari/inari-cli
+    description: "The inari CLI: login, cluster/catalog/resource ops, agent install, extension scaffolding"
+    license: Apache-2.0
+
+# Follow-up: cosign-sign archives/checksums once signing infra exists
+# (see AGENTS.md "Conventions").
