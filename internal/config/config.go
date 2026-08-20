@@ -20,6 +20,7 @@ const (
 
 type Context struct {
 	Server string `yaml:"server"`
+	Issuer string `yaml:"issuer,omitempty"`
 	Tenant string `yaml:"tenant,omitempty"`
 }
 

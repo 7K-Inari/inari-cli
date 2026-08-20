@@ -50,6 +50,9 @@ Configuration lives in ~/.config/inari/ with kubectl-style contexts
 	root.PersistentFlags().BoolVarP(&opts.Verbose, "verbose", "v", false, "Verbose logging to stderr")
 
 	root.AddCommand(newVersionCmd(version, commit, date, out))
+	root.AddCommand(newLoginCmd(opts))
+	root.AddCommand(newLogoutCmd(opts))
+	root.AddCommand(newContextCmd(opts))
 
 	return root
 }
