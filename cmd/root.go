@@ -54,6 +54,7 @@ Configuration lives in ~/.config/inari/ with kubectl-style contexts
 	root.AddCommand(newLogoutCmd(opts))
 	root.AddCommand(newContextCmd(opts))
 	root.AddCommand(newClusterCmd(opts))
+	root.AddCommand(newCatalogCmd(opts))
 
 	return root
 }
