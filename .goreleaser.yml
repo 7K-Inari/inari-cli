@@ -49,7 +49,7 @@ checksum:
 changelog:
   disable: true
 
-brews:
+homebrew_casks:
   # Homebrew tap: 7K-Inari/homebrew-tap (assumed per platform plan §6; adjust
   # if the tap repo name differs). Requires the HOMEBREW_TAP_GITHUB_TOKEN
   # secret with write access to the tap repo.
@@ -58,12 +58,15 @@ brews:
       owner: 7K-Inari
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    directory: Formula
     homepage: https://github.com/7K-Inari/inari-cli
     description: "The inari CLI: login, cluster/catalog/resource ops, agent install, extension scaffolding"
     license: Apache-2.0
-    install: |
-      bin.install "inari"
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/inari"]
+          end
 
 scoops:
   # Scoop bucket: 7K-Inari/scoop-bucket (assumed per platform plan §6).

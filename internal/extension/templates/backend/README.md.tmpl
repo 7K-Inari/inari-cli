@@ -1,0 +1,14 @@
+# {{.Name}}
+
+Inari backend extension (`{{.Kind}}`), scaffolded by `inari extension init`.
+
+## Develop
+
+1. `go mod tidy`
+2. Implement the plugin contract from `github.com/7K-Inari/inari-plugin-sdk`.
+3. Run against a dev control plane; endpoints surface under `/api/extensions/{{.Name}}/*`.
+
+## References
+
+- Platform plan §5.8 (extensibility model)
+- `inari-api` for the versioned plugin gRPC contract
