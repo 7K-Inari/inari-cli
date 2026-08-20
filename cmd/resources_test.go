@@ -16,8 +16,8 @@ func instanceFixture() map[string]any {
 		"version": "1.2.0", "latestVersion": "1.3.0", "newVersionAvailable": true,
 		"generation": 3, "managementMode": "adopt", "syncState": "Synced",
 		"resourceRef": map[string]any{"kind": "PostgreSQL", "name": "orders-db", "namespace": "data"},
-		"spec": map[string]any{"size": "large"},
-		"createdAt": "2026-08-01T00:00:00Z", "updatedAt": "2026-08-10T00:00:00Z",
+		"spec":        map[string]any{"size": "large"},
+		"createdAt":   "2026-08-01T00:00:00Z", "updatedAt": "2026-08-10T00:00:00Z",
 	}
 }
 

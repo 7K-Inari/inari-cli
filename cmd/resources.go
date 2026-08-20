@@ -83,9 +83,9 @@ func newResourcesListCmd(opts *GlobalOptions) *cobra.Command {
 
 func newResourcesGetCmd(opts *GlobalOptions) *cobra.Command {
 	return &cobra.Command{
-		Use:   "get ID",
-		Short: "Show details of a single resource instance",
-		Args:  cobra.ExactArgs(1),
+		Use:     "get ID",
+		Short:   "Show details of a single resource instance",
+		Args:    cobra.ExactArgs(1),
 		Example: "  inari resources get inst-1\n  inari resources get inst-1 -o yaml",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, cc, err := opts.resolveContext()

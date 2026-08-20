@@ -78,9 +78,9 @@ func newContextUseCmd(opts *GlobalOptions) *cobra.Command {
 func newContextSetCmd(opts *GlobalOptions) *cobra.Command {
 	var server, issuer, tenant string
 	c := &cobra.Command{
-		Use:   "set NAME",
-		Short: "Create or update a context without logging in",
-		Args:  cobra.ExactArgs(1),
+		Use:     "set NAME",
+		Short:   "Create or update a context without logging in",
+		Args:    cobra.ExactArgs(1),
 		Example: `  inari context set prod --server https://api.inari.example.com --tenant acme`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Load()
