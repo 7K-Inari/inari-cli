@@ -73,7 +73,7 @@ func (f *DeviceFlow) Start(ctx context.Context) (*DeviceAuth, error) {
 	if err != nil {
 		return nil, fmt.Errorf("device authorization request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -129,7 +129,7 @@ func (f *DeviceFlow) Poll(ctx context.Context, da *DeviceAuth) (*Token, error) {
 			return nil, fmt.Errorf("token poll: %w", err)
 		}
 		body, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		if err != nil {
 			return nil, err
 		}
@@ -196,7 +196,7 @@ func (f *DeviceFlow) Refresh(ctx context.Context, refreshToken string) (*Token, 
 	if err != nil {
 		return nil, fmt.Errorf("refresh request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err

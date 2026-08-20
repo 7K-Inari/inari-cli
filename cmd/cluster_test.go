@@ -46,7 +46,7 @@ func TestClusterRegisterPrintsManifest(t *testing.T) {
 			t.Errorf("decode body: %v", err)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"cluster": map[string]any{
 				"id": "clu-1", "name": "prod-eu", "orgId": "acme", "state": "Pending",
 				"createdAt": time.Now().UTC().Format(time.RFC3339),
@@ -57,7 +57,7 @@ func TestClusterRegisterPrintsManifest(t *testing.T) {
 	mux.HandleFunc("/api/v1/tenants/acme/clusters/clu-1/install-manifest", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if b, err := json.Marshal(base64.StdEncoding.EncodeToString([]byte(manifest))); err == nil {
-			w.Write(b)
+			_, _ = w.Write(b)
 		}
 	})
 	srv := httptest.NewServer(mux)
@@ -89,7 +89,7 @@ func TestClusterListTable(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/tenants/acme/clusters", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"clusters": []map[string]any{{
 				"id": "clu-1", "name": "prod-eu", "orgId": "acme", "state": "Active",
 				"kubernetesVersion": "1.34.1", "createdAt": time.Now().UTC().Format(time.RFC3339),
@@ -118,7 +118,7 @@ func TestClusterRegisterSurfacesAPIError(t *testing.T) {
 	mux.HandleFunc("/api/v1/tenants/acme/clusters", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/problem+json")
 		w.WriteHeader(http.StatusConflict)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"title": "Conflict", "detail": "cluster name already exists", "status": 409,
 		})
 	})

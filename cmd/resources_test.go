@@ -29,11 +29,11 @@ func resourcesFakeServer(t *testing.T, assertQuery func(r *http.Request)) *httpt
 			assertQuery(r)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"instances": []map[string]any{instanceFixture()}})
+		_ = json.NewEncoder(w).Encode(map[string]any{"instances": []map[string]any{instanceFixture()}})
 	})
 	mux.HandleFunc("/api/v1/tenants/acme/instances/inst-1", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"instance": instanceFixture()})
+		_ = json.NewEncoder(w).Encode(map[string]any{"instance": instanceFixture()})
 	})
 	return httptest.NewServer(mux)
 }

@@ -34,7 +34,7 @@ func TestNewRefreshesExpiredToken(t *testing.T) {
 			t.Errorf("grant_type = %q", r.Form.Get("grant_type"))
 		}
 		sawRefresh = true
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"access_token": "fresh-token",
 			"token_type":   "Bearer",
 			"expires_in":   300,
@@ -44,7 +44,7 @@ func TestNewRefreshesExpiredToken(t *testing.T) {
 	mux.HandleFunc("/api/v1/tenants/acme/clusters", func(w http.ResponseWriter, r *http.Request) {
 		sawAuth = r.Header.Get("Authorization")
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"clusters": []any{}})
+		_ = json.NewEncoder(w).Encode(map[string]any{"clusters": []any{}})
 	})
 	srv := httptest.NewServer(mux)
 	defer srv.Close()

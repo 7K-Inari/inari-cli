@@ -33,7 +33,7 @@ func (fk *fakeKeycloak) handler() http.Handler {
 			fk.t.Errorf("scope = %q, want it to contain 'organization'", scope)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(DeviceAuth{
+		_ = json.NewEncoder(w).Encode(DeviceAuth{
 			DeviceCode:      "dev-code",
 			UserCode:        "ABCD-EFGH",
 			VerificationURI: "https://kc.example/device",
@@ -51,10 +51,10 @@ func (fk *fakeKeycloak) handler() http.Handler {
 			n := atomic.AddInt32(&fk.polls, 1)
 			if n <= fk.approveAfter {
 				w.WriteHeader(http.StatusBadRequest)
-				json.NewEncoder(w).Encode(tokenError{Error: "authorization_pending"})
+				_ = json.NewEncoder(w).Encode(tokenError{Error: "authorization_pending"})
 				return
 			}
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"access_token":  "access-123",
 				"refresh_token": "refresh-456",
 				"token_type":    "Bearer",
@@ -63,17 +63,17 @@ func (fk *fakeKeycloak) handler() http.Handler {
 		case "refresh_token":
 			if r.Form.Get("refresh_token") != "refresh-456" {
 				w.WriteHeader(http.StatusBadRequest)
-				json.NewEncoder(w).Encode(tokenError{Error: "invalid_grant"})
+				_ = json.NewEncoder(w).Encode(tokenError{Error: "invalid_grant"})
 				return
 			}
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"access_token": "access-789",
 				"token_type":   "Bearer",
 				"expires_in":   300,
 			})
 		default:
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(tokenError{Error: "unsupported_grant_type"})
+			_ = json.NewEncoder(w).Encode(tokenError{Error: "unsupported_grant_type"})
 		}
 	})
 	return mux

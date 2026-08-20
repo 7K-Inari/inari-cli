@@ -17,7 +17,7 @@ func fakeDeviceFlowServer(t *testing.T, accessToken string) *httptest.Server {
 	t.Helper()
 	mux := http.NewServeMux()
 	mux.HandleFunc("/protocol/openid-connect/auth/device", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"device_code":      "dc",
 			"user_code":        "WXYZ-1234",
 			"verification_uri": "https://kc.example/device",
@@ -25,7 +25,7 @@ func fakeDeviceFlowServer(t *testing.T, accessToken string) *httptest.Server {
 		})
 	})
 	mux.HandleFunc("/protocol/openid-connect/token", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"access_token":  accessToken,
 			"refresh_token": "rt",
 			"token_type":    "Bearer",

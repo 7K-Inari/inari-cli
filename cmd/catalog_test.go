@@ -33,11 +33,11 @@ func catalogFakeServer(t *testing.T, assertQuery func(r *http.Request)) *httptes
 			assertQuery(r)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"items": []map[string]any{catalogItemFixture()}})
+		_ = json.NewEncoder(w).Encode(map[string]any{"items": []map[string]any{catalogItemFixture()}})
 	})
 	mux.HandleFunc("/api/v1/tenants/acme/catalog/postgres-aws", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"item": catalogItemFixture()})
+		_ = json.NewEncoder(w).Encode(map[string]any{"item": catalogItemFixture()})
 	})
 	return httptest.NewServer(mux)
 }

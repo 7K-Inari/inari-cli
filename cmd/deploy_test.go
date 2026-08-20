@@ -32,7 +32,7 @@ func deployFakeServer(t *testing.T, onDeploy func(body map[string]any)) *httptes
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/tenants/acme/catalog/postgres-aws", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"item": item})
+		_ = json.NewEncoder(w).Encode(map[string]any{"item": item})
 	})
 	mux.HandleFunc("/api/v1/tenants/acme/deploys", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
@@ -43,7 +43,7 @@ func deployFakeServer(t *testing.T, onDeploy func(body map[string]any)) *httptes
 			onDeploy(body)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"deploy": map[string]any{
 				"InstanceID": "inst-1", "Status": "Provisioning", "Version": "1.2.0",
 				"CommitSHA": "abc123", "PRURL": "https://git.example/pr/7", "ApprovalID": "",
@@ -52,7 +52,7 @@ func deployFakeServer(t *testing.T, onDeploy func(body map[string]any)) *httptes
 	})
 	mux.HandleFunc("/api/v1/tenants/acme/policies/evaluate", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"decision": map[string]any{"allow": true, "violations": []any{}, "warnings": []any{}},
 		})
 	})
