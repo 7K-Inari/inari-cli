@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
+  issues: write
 
 jobs:
   release:
@@ -21,9 +23,11 @@ jobs:
       - uses: googleapis/release-please-action@v4
         id: release
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          # PR-only mode lives in release-please.yml; here the action only
+          # detects a merged Release PR and creates the tag + Release.
+          skip-github-pull-request: true
 
   publish:
     name: goreleaser
