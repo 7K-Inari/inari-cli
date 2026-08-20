@@ -1,0 +1,17 @@
+package main
+
+import (
+	"context"
+	"log"
+)
+
+// {{.Name}} is an Inari backend extension.
+//
+// Backend extensions are gRPC plugins implementing the versioned contract in
+// github.com/7K-Inari/inari-plugin-sdk (hashicorp go-plugin handshake). The
+// control plane loads them as sidecars and proxies their HTTP endpoints at
+// /api/extensions/{{.Name}}/* with Inari authn/authz applied.
+func main() {
+	log.Println("{{.Name}}: TODO implement the plugin handshake and register your handlers")
+	_ = context.Background()
+}

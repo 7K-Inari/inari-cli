@@ -1,0 +1,14 @@
+import type { FC } from "react";
+
+// {{.Name}} — Inari UI extension entry point.
+//
+// UI extensions are Module Federation remotes registered against typed
+// blueprint slots (NavItemBlueprint, CatalogCardBlueprint, ClusterTabBlueprint,
+// FormWidgetBlueprint, PageBlueprint) from @inari/ui-plugin-sdk. The host
+// console loads this remote's remoteEntry.js at runtime.
+
+export const {{.Pascal}}Page: FC = () => {
+  return <div>{{.Name}} extension — replace with your UI.</div>;
+};
+
+export default {{.Pascal}}Page;
