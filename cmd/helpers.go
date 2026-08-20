@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"text/tabwriter"
 
 	"github.com/spf13/cobra"
@@ -22,6 +23,13 @@ func newAPIClient(cmd *cobra.Command, opts *GlobalOptions, cc config.Context) (*
 
 func apiError(status string, model *oas.ErrorModel) error {
 	return api.Error(status, model)
+}
+
+func requireTenant(cc config.Context) error {
+	if cc.Tenant == "" {
+		return fmt.Errorf("no tenant in context; run 'inari login --tenant <slug>'")
+	}
+	return nil
 }
 
 func newTable(w interface{ Write([]byte) (int, error) }) *tabwriter.Writer {

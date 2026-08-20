@@ -47,6 +47,9 @@ printed.`,
 			if err != nil {
 				return err
 			}
+			if err := requireTenant(cc); err != nil {
+				return err
+			}
 			if clusterID == "" {
 				return fmt.Errorf("--cluster is required (see 'inari cluster list')")
 			}
@@ -64,7 +67,11 @@ printed.`,
 				return apiError(itemRsp.Status(), itemRsp.ApplicationproblemJSONDefault)
 			}
 			item := itemRsp.JSON200.Item
-			fields, err := schema.Walk(pickSchema(item, version))
+			rawSchema := pickSchema(item, version)
+			if rawSchema == nil && version != "" {
+				return fmt.Errorf("version %q not found for item %q (see 'inari catalog describe %s')", version, args[0], args[0])
+			}
+			fields, err := schema.Walk(rawSchema)
 			if err != nil {
 				return fmt.Errorf("reading item schema: %w", err)
 			}
@@ -86,10 +93,16 @@ printed.`,
 					return fmt.Errorf("missing required values: %s (provide via --file or --set)", strings.Join(missing, ", "))
 				}
 			default:
+				if len(fields) == 0 {
+					return fmt.Errorf("item %q has no promptable schema; use --file/--set for non-interactive deploy", args[0])
+				}
 				fmt.Fprintf(opts.ErrOut, "Starting interactive deploy of %q (ctrl-c to abort)\n", args[0])
 				spec, err = prompt.Collect(prompt.SurveyPrompter{}, fields)
 				if err != nil {
 					return err
+				}
+				if missing := schema.Validate(fields, spec); len(missing) > 0 {
+					return fmt.Errorf("missing required values: %s", strings.Join(missing, ", "))
 				}
 			}
 
@@ -107,7 +120,7 @@ printed.`,
 				if rsp.JSON200 == nil {
 					return apiError(rsp.Status(), rsp.ApplicationproblemJSONDefault)
 				}
-				return printStructured(opts, rsp.JSON200.Decision)
+				return printDecision(opts, rsp.JSON200.Decision)
 			}
 
 			deployBody := oas.DeployCatalogItemJSONRequestBody{
@@ -161,6 +174,35 @@ printed.`,
 	c.Flags().StringArrayVar(&sets, "set", nil, "Set a value key=value, dot paths supported (repeatable)")
 	c.Flags().BoolVar(&dryRun, "dry-run", false, "Evaluate request-time policies without deploying")
 	return c
+}
+
+func printDecision(opts *GlobalOptions, d oas.PolicyDecision) error {
+	if opts.Output == "json" || opts.Output == "yaml" {
+		return printStructured(opts, d)
+	}
+	if d.Allow {
+		fmt.Fprintln(opts.Out, "Policy decision: ALLOWED")
+	} else {
+		fmt.Fprintln(opts.Out, "Policy decision: DENIED")
+	}
+	printViolations := func(label string, vs *[]oas.PolicyViolation) {
+		if vs == nil {
+			return
+		}
+		for _, v := range *vs {
+			msg := v.Reason
+			if v.Rule != "" {
+				msg = v.Rule + ": " + msg
+			}
+			if v.Remediation != "" {
+				msg += " (remediation: " + v.Remediation + ")"
+			}
+			fmt.Fprintf(opts.Out, "%s: %s\n", label, msg)
+		}
+	}
+	printViolations("Violation", d.Violations)
+	printViolations("Warning", d.Warnings)
+	return nil
 }
 
 func pickSchema(item oas.ItemView, version string) any {

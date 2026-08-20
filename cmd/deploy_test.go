@@ -9,6 +9,10 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/7K-Inari/inari-cli/internal/auth"
+	"github.com/7K-Inari/inari-cli/internal/config"
 )
 
 func deployFakeServer(t *testing.T, onDeploy func(body map[string]any)) *httptest.Server {
@@ -131,5 +135,78 @@ func TestDeployDryRunEvaluatesPolicy(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), `"allow": true`) {
 		t.Errorf("dry-run output = %q", out.String())
+	}
+}
+
+func TestDeployDryRunDefaultOutputRendersDecision(t *testing.T) {
+	srv := deployFakeServer(t, nil)
+	defer srv.Close()
+
+	out := setupAuthedContext(t, srv.URL)
+	root := NewRootCmd("dev", "none", "now", out, &bytes.Buffer{})
+	root.SetArgs([]string{"deploy", "postgres-aws", "--cluster", "clu-1", "--set", "size=large", "--dry-run"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("dry-run with default table output must not error, got %v", err)
+	}
+	if !strings.Contains(strings.ToLower(out.String()), "allow") {
+		t.Errorf("dry-run table output = %q", out.String())
+	}
+}
+
+func TestDeployUnknownVersionFails(t *testing.T) {
+	var deployed bool
+	srv := deployFakeServer(t, func(b map[string]any) { deployed = true })
+	defer srv.Close()
+
+	out := setupAuthedContext(t, srv.URL)
+	root := NewRootCmd("dev", "none", "now", out, &bytes.Buffer{})
+	root.SetArgs([]string{"deploy", "postgres-aws", "--cluster", "clu-1", "--version", "9.9.9", "--set", "size=large"})
+	err := root.Execute()
+	if err == nil || !strings.Contains(err.Error(), `version "9.9.9"`) {
+		t.Fatalf("expected unknown-version error, got %v", err)
+	}
+	if deployed {
+		t.Fatal("no deploy call must be made for an unknown version")
+	}
+}
+
+func TestCatalogListRejectsUnknownOutputFormat(t *testing.T) {
+	srv := deployFakeServer(t, nil)
+	defer srv.Close()
+
+	out := setupAuthedContext(t, srv.URL)
+	root := NewRootCmd("dev", "none", "now", out, &bytes.Buffer{})
+	root.SetArgs([]string{"-o", "bogus", "catalog", "list"})
+	err := root.Execute()
+	if err == nil || !strings.Contains(err.Error(), `unknown output format "bogus"`) {
+		t.Fatalf("expected unknown-format error, got %v", err)
+	}
+}
+
+func TestCatalogListRequiresTenant(t *testing.T) {
+	srv := deployFakeServer(t, nil)
+	defer srv.Close()
+
+	out := setupAuthedContext(t, srv.URL)
+	t.Setenv("INARI_CONFIG_DIR", t.TempDir())
+	cfg := &config.Config{}
+	cfg.SetContext("default", config.Context{Server: srv.URL, Issuer: srv.URL})
+	cfg.CurrentContext = "default"
+	if err := cfg.Save(); err != nil {
+		t.Fatal(err)
+	}
+	cache, err := auth.NewCache()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := cache.Save("default", &auth.Token{AccessToken: "tok", ExpiresAt: time.Now().Add(time.Hour)}); err != nil {
+		t.Fatal(err)
+	}
+
+	root := NewRootCmd("dev", "none", "now", out, &bytes.Buffer{})
+	root.SetArgs([]string{"catalog", "list"})
+	err = root.Execute()
+	if err == nil || !strings.Contains(err.Error(), "no tenant") {
+		t.Fatalf("expected no-tenant error, got %v", err)
 	}
 }

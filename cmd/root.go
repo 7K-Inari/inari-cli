@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -39,6 +40,14 @@ Configuration lives in ~/.config/inari/ with kubectl-style contexts
 (per-context control-plane server and tenant).`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			switch opts.Output {
+			case "table", "json", "yaml":
+				return nil
+			default:
+				return fmt.Errorf("unknown output format %q (want table|json|yaml)", opts.Output)
+			}
+		},
 	}
 
 	root.SetOut(out)
@@ -78,14 +87,18 @@ func (o *GlobalOptions) resolveContext() (string, config.Context, error) {
 		return "", config.Context{}, err
 	}
 	name := o.ContextFlag
+	serverOverride := o.ServerFlag
+	if serverOverride == "" {
+		serverOverride = os.Getenv("INARI_SERVER")
+	}
 	if name == "" {
 		var ctx config.Context
 		name, ctx, err = cfg.Current()
 		if err != nil {
 			return "", config.Context{}, err
 		}
-		if o.ServerFlag != "" {
-			ctx.Server = o.ServerFlag
+		if serverOverride != "" {
+			ctx.Server = serverOverride
 		}
 		return name, ctx, nil
 	}
@@ -93,8 +106,8 @@ func (o *GlobalOptions) resolveContext() (string, config.Context, error) {
 	if !ok {
 		return "", config.Context{}, fmt.Errorf("context %q not found", name)
 	}
-	if o.ServerFlag != "" {
-		ctx.Server = o.ServerFlag
+	if serverOverride != "" {
+		ctx.Server = serverOverride
 	}
 	return name, ctx, nil
 }

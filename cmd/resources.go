@@ -30,6 +30,9 @@ func newResourcesListCmd(opts *GlobalOptions) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if err := requireTenant(cc); err != nil {
+				return err
+			}
 			client, err := newAPIClient(cmd, opts, cc)
 			if err != nil {
 				return err
@@ -90,6 +93,9 @@ func newResourcesGetCmd(opts *GlobalOptions) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, cc, err := opts.resolveContext()
 			if err != nil {
+				return err
+			}
+			if err := requireTenant(cc); err != nil {
 				return err
 			}
 			client, err := newAPIClient(cmd, opts, cc)

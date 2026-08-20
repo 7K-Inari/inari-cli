@@ -31,6 +31,9 @@ func newCatalogListCmd(opts *GlobalOptions) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if err := requireTenant(cc); err != nil {
+				return err
+			}
 			client, err := newAPIClient(cmd, opts, cc)
 			if err != nil {
 				return err
@@ -79,6 +82,9 @@ by 'inari deploy' to generate prompts.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, cc, err := opts.resolveContext()
 			if err != nil {
+				return err
+			}
+			if err := requireTenant(cc); err != nil {
 				return err
 			}
 			client, err := newAPIClient(cmd, opts, cc)

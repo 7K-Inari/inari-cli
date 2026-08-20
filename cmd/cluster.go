@@ -37,8 +37,8 @@ The manifest is printed to stdout by default so it can be piped directly:
 			if err != nil {
 				return err
 			}
-			if cc.Tenant == "" {
-				return fmt.Errorf("no tenant in context; run 'inari login --tenant <slug>'")
+			if err := requireTenant(cc); err != nil {
+				return err
 			}
 			client, err := newAPIClient(cmd, opts, cc)
 			if err != nil {
