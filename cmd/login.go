@@ -55,7 +55,7 @@ refresh token) are cached per context under ~/.config/inari/tokens/ with
 			flow := &auth.DeviceFlow{
 				Issuer:   issuer,
 				ClientID: auth.DefaultClientID,
-				Scopes:   []string{"openid", "organization", "profile", "email"},
+				Scopes:   []string{"openid", "organization:*", "profile", "email"},
 			}
 			ctx := cmd.Context()
 
