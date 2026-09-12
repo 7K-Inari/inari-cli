@@ -91,11 +91,15 @@ by 'inari deploy' to generate prompts.`,
 			if err != nil {
 				return err
 			}
+			itemID, err := resolveCatalogItemID(cmd.Context(), client, cc.Tenant, cluster, args[0])
+			if err != nil {
+				return err
+			}
 			params := &oas.GetCatalogItemParams{}
 			if cluster != "" {
 				params.Cluster = &cluster
 			}
-			rsp, err := client.OAS.GetCatalogItemWithResponse(cmd.Context(), cc.Tenant, args[0], params)
+			rsp, err := client.OAS.GetCatalogItemWithResponse(cmd.Context(), cc.Tenant, itemID, params)
 			if err != nil {
 				return err
 			}

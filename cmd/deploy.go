@@ -59,7 +59,11 @@ printed.`,
 			}
 			ctx := cmd.Context()
 
-			itemRsp, err := client.OAS.GetCatalogItemWithResponse(ctx, cc.Tenant, args[0], &oas.GetCatalogItemParams{Cluster: &clusterID})
+			itemID, err := resolveCatalogItemID(ctx, client, cc.Tenant, clusterID, args[0])
+			if err != nil {
+				return err
+			}
+			itemRsp, err := client.OAS.GetCatalogItemWithResponse(ctx, cc.Tenant, itemID, &oas.GetCatalogItemParams{Cluster: &clusterID})
 			if err != nil {
 				return err
 			}
@@ -109,7 +113,7 @@ printed.`,
 			if dryRun {
 				evalBody := oas.EvaluateInputBody{
 					ClusterId: clusterID,
-					ItemId:    args[0],
+					ItemId:    itemID,
 					Spec:      spec,
 					Version:   version,
 				}
@@ -125,7 +129,7 @@ printed.`,
 
 			deployBody := oas.DeployCatalogItemJSONRequestBody{
 				ClusterId: clusterID,
-				ItemId:    args[0],
+				ItemId:    itemID,
 				Spec:      spec,
 			}
 			if version != "" {
