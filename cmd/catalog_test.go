@@ -11,7 +11,7 @@ import (
 
 func catalogItemFixture() map[string]any {
 	return map[string]any{
-		"id":             "item-1",
+		"id":             "curated:postgres-aws",
 		"name":           "postgres-aws",
 		"displayName":    "PostgreSQL on AWS",
 		"description":    "Managed PostgreSQL via Crossplane",
@@ -35,7 +35,7 @@ func catalogFakeServer(t *testing.T, assertQuery func(r *http.Request)) *httptes
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{"items": []map[string]any{catalogItemFixture()}})
 	})
-	mux.HandleFunc("/api/v1/tenants/acme/catalog/postgres-aws", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v1/tenants/acme/catalog/curated:postgres-aws", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{"item": catalogItemFixture()})
 	})
