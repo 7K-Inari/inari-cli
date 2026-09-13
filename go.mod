@@ -30,3 +30,5 @@ require (
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.37.0 // indirect
 )
+
+replace github.com/7K-Inari/inari-api => ../inari-api
