@@ -171,6 +171,7 @@ func TestClusterKubeconfigDirect(t *testing.T) {
 		"--oidc-client-id=org-acme-kubectl",
 		"--oidc-extra-scope=organization",
 		"client.authentication.k8s.io",
+		"interactiveMode: Never",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("kubeconfig missing %q:\n%s", want, got)

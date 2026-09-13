@@ -201,6 +201,7 @@ func renderKubeconfig(clusterID, tenant, apiServer string, ai *oas.ClusterAccess
 	} {
 		b.WriteString("      - " + a + "\n")
 	}
+	b.WriteString("      interactiveMode: Never\n")
 	b.WriteString("      provideClusterInfo: true\n")
 	b.WriteString("contexts:\n- name: " + name + "\n  context:\n    cluster: " + name + "\n    user: " + name + "\n")
 	b.WriteString("current-context: " + name + "\n")
