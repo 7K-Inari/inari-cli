@@ -3,7 +3,7 @@ module github.com/7K-Inari/inari-cli
 go 1.26.3
 
 require (
-	github.com/7K-Inari/inari-api v0.3.1-0.20260820131115-76d69f96bebe
+	github.com/7K-Inari/inari-api v0.5.3-0.20260914094207-7edd65218416
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/spf13/cobra v1.10.2
 	gopkg.in/yaml.v3 v3.0.1
