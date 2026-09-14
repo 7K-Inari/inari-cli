@@ -230,3 +230,44 @@ func TestClusterKubeconfigRejectsBadGrantType(t *testing.T) {
 		t.Fatalf("want grant-type error, got %v", err)
 	}
 }
+
+func TestClusterKubeconfigRejectsServerWithGateway(t *testing.T) {
+	srv := accessInfoServer(t)
+	out := setupAuthedContext(t, srv.URL)
+	root := NewRootCmd("dev", "none", "now", out, &bytes.Buffer{})
+	root.SetArgs([]string{"cluster", "kubeconfig", "clu-1", "--gateway", "--server", "https://api.prod:6443"})
+	err := root.Execute()
+	if err == nil || !strings.Contains(err.Error(), "mutually exclusive") {
+		t.Fatalf("want mutually-exclusive error, got %v", err)
+	}
+}
+
+func TestClusterKubeconfigRejectsUnsafeClusterID(t *testing.T) {
+	srv := accessInfoServer(t)
+	out := setupAuthedContext(t, srv.URL)
+	root := NewRootCmd("dev", "none", "now", out, &bytes.Buffer{})
+	root.SetArgs([]string{"cluster", "kubeconfig", "bad id\ninjected: true", "--server", "https://api.prod:6443"})
+	err := root.Execute()
+	if err == nil || !strings.Contains(err.Error(), "invalid cluster ID") {
+		t.Fatalf("want invalid cluster ID error, got %v", err)
+	}
+}
+
+func TestClusterKubeconfigRejectsIncompleteAccessInfo(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/v1/tenants/acme/clusters/clu-1/access-info", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"accessInfo": map[string]any{"issuerUrl": "", "kubectlClientId": "org-acme-kubectl"},
+		})
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	out := setupAuthedContext(t, srv.URL)
+	root := NewRootCmd("dev", "none", "now", out, &bytes.Buffer{})
+	root.SetArgs([]string{"cluster", "kubeconfig", "clu-1", "--server", "https://api.prod:6443"})
+	err := root.Execute()
+	if err == nil || !strings.Contains(err.Error(), "incomplete access info") {
+		t.Fatalf("want incomplete access info error, got %v", err)
+	}
+}

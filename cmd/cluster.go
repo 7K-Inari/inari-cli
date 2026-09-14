@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/7K-Inari/inari-api/gen/go/oas"
@@ -116,6 +117,10 @@ func newClusterListCmd(opts *GlobalOptions) *cobra.Command {
 	}
 }
 
+// clusterIDRe pins the cluster ID charset the kubeconfig renderer can
+// embed safely (it lands unquoted in YAML names and URL paths).
+var clusterIDRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
+
 func newClusterKubeconfigCmd(opts *GlobalOptions) *cobra.Command {
 	var server, grantType string
 	var gateway bool
@@ -145,8 +150,15 @@ Pipe it into a file and point kubectl at it:
 			if grantType != "authcode" && grantType != "device-code" {
 				return fmt.Errorf("invalid --grant-type %q, want authcode or device-code", grantType)
 			}
+			if gateway && server != "" {
+				return fmt.Errorf("--server and --gateway are mutually exclusive (direct vs gateway-impersonated topology)")
+			}
 			if !gateway && server == "" {
 				return fmt.Errorf("--server is required in direct mode (the control plane never learns tenant API endpoints); use --gateway for private clusters")
+			}
+			clusterID := args[0]
+			if !clusterIDRe.MatchString(clusterID) {
+				return fmt.Errorf("invalid cluster ID %q", clusterID)
 			}
 			_, cc, err := opts.resolveContext()
 			if err != nil {
@@ -159,7 +171,6 @@ Pipe it into a file and point kubectl at it:
 			if err != nil {
 				return err
 			}
-			clusterID := args[0]
 			rsp, err := client.OAS.GetClusterAccessInfoWithResponse(cmd.Context(), cc.Tenant, clusterID)
 			if err != nil {
 				return err
@@ -168,6 +179,9 @@ Pipe it into a file and point kubectl at it:
 				return apiError(rsp.Status(), rsp.ApplicationproblemJSONDefault)
 			}
 			ai := &rsp.JSON200.AccessInfo
+			if ai.IssuerUrl == "" || ai.KubectlClientId == "" {
+				return fmt.Errorf("server returned incomplete access info (issuerUrl=%q, kubectlClientId=%q); is the control plane's OIDC issuer configured?", ai.IssuerUrl, ai.KubectlClientId)
+			}
 			apiServer := server
 			if gateway {
 				apiServer = strings.TrimSuffix(cc.Server, "/") + "/api/v1/tenants/" + cc.Tenant + "/clusters/" + clusterID + "/proxy"
