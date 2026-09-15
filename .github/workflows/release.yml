@@ -32,7 +32,9 @@ jobs:
   publish:
     name: goreleaser
     needs: release
-    if: needs.release.outputs.releases_created == 'true'
+    # workflow_dispatch acts as a manual escape hatch to re-publish artifacts
+    # for the latest existing tag/release (release-please no-ops in that case).
+    if: needs.release.outputs.releases_created == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -51,4 +53,3 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
