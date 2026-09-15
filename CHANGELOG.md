@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.2](https://github.com/7K-Inari/inari-cli/compare/v0.4.1...v0.4.2) (2026-09-15)
+
+
+### Bug Fixes
+
+* **ci:** check out the release tag in the goreleaser job ([2215e81](https://github.com/7K-Inari/inari-cli/commit/2215e812f534a8d57d77cf4486b07ba438ecfb9e))
+* **ci:** check out the release tag in the goreleaser job ([e54a940](https://github.com/7K-Inari/inari-cli/commit/e54a9406c36502772ba7d97edc91621fe225d62f))
+
 ## [0.4.1](https://github.com/7K-Inari/inari-cli/compare/v0.4.0...v0.4.1) (2026-09-15)
 
 
