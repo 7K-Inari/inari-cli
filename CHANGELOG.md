@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.1](https://github.com/7K-Inari/inari-cli/compare/v0.4.0...v0.4.1) (2026-09-15)
+
+
+### Bug Fixes
+
+* **ci:** disable brew/scoop tap publishing so release artifacts publish ([9b9d70e](https://github.com/7K-Inari/inari-cli/commit/9b9d70e42201340f1b5e3ad060f5fb559f02faa2))
+* **ci:** drop deadlocked workflow_dispatch re-publish escape hatch ([40612fb](https://github.com/7K-Inari/inari-cli/commit/40612fbe1f945239e869cefe9f5b982ca1a77a80))
+* **ci:** make goreleaser release publish (drop broken taps + deadlocked escape hatch) ([d4b7f5e](https://github.com/7K-Inari/inari-cli/commit/d4b7f5e7695815ec90319be02ec75efbdd75914c))
+
 ## [0.4.0](https://github.com/7K-Inari/inari-cli/compare/v0.3.0...v0.4.0) (2026-09-14)
 
 
