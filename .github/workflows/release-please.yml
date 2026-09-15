@@ -3,6 +3,10 @@ name: release-please
 on:
   push:
     branches: [main]
+  # Manual trigger: merging a PR via the GitHub API does not reliably emit a
+  # push event, which can leave the Release PR stale — dispatch this workflow
+  # to regenerate it. (The gate below no-ops on release merges as usual.)
+  workflow_dispatch:
 
 permissions:
   contents: write
