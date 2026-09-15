@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.0](https://github.com/7K-Inari/inari-cli/compare/v0.3.0...v0.4.0) (2026-09-14)
+
+
+### Features
+
+* **cluster:** inari cluster kubeconfig — kubelogin exec-credential config (plan §7.2) ([#13](https://github.com/7K-Inari/inari-cli/issues/13)) ([63af2a4](https://github.com/7K-Inari/inari-cli/commit/63af2a4078e43fbb6a15d67148f71e2eab735843))
+
+
+### Bug Fixes
+
+* **auth:** request organization:* scope in device login ([#11](https://github.com/7K-Inari/inari-cli/issues/11)) ([0b23aa7](https://github.com/7K-Inari/inari-cli/commit/0b23aa7198fd5dcdb18d9428c4da363fb6cfd464))
+* **catalog:** resolve bare item names to fully-qualified IDs ([#12](https://github.com/7K-Inari/inari-cli/issues/12)) ([7a2405e](https://github.com/7K-Inari/inari-cli/commit/7a2405e5ebbbaea04d5b71aa82ce747f0319aa24))
+
 ## [0.3.0](https://github.com/7K-Inari/inari-cli/compare/v0.2.0...v0.3.0) (2026-08-21)
 
 
