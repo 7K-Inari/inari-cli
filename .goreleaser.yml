@@ -49,36 +49,13 @@ checksum:
 changelog:
   disable: true
 
-homebrew_casks:
-  # Homebrew tap: 7K-Inari/homebrew-tap (assumed per platform plan §6; adjust
-  # if the tap repo name differs). Requires the HOMEBREW_TAP_GITHUB_TOKEN
-  # secret with write access to the tap repo.
-  - name: inari
-    repository:
-      owner: 7K-Inari
-      name: homebrew-tap
-      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    homepage: https://github.com/7K-Inari/inari-cli
-    description: "The inari CLI: login, cluster/catalog/resource ops, agent install, extension scaffolding"
-    license: Apache-2.0
-    hooks:
-      post:
-        install: |
-          if OS.mac?
-            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/inari"]
-          end
-
-scoops:
-  # Scoop bucket: 7K-Inari/scoop-bucket (assumed per platform plan §6).
-  - name: inari
-    repository:
-      owner: 7K-Inari
-      name: scoop-bucket
-      token: "{{ .Env.GITHUB_TOKEN }}"
-    directory: bucket
-    homepage: https://github.com/7K-Inari/inari-cli
-    description: "The inari CLI: login, cluster/catalog/resource ops, agent install, extension scaffolding"
-    license: Apache-2.0
+# brew/scoop tap publishing is temporarily disabled: the tap repos
+# (7K-Inari/homebrew-tap, 7K-Inari/scoop-bucket) do not exist yet and the
+# release token has no access (v0.4.0 run failed with 401/404), which aborted
+# the whole goreleaser run before core artifacts were uploaded.
+# Follow-up: create the tap repos, add a HOMEBREW_TAP_GITHUB_TOKEN secret with
+# write access, and restore publishing using `brews:` (formula — appropriate
+# for a CLI binary; `homebrew_casks:` is for GUI apps) plus `scoops:`.
 
 # Follow-up: cosign-sign archives/checksums once signing infra exists
 # (see AGENTS.md "Conventions").
