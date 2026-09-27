@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -51,7 +52,7 @@ func (c *Client) http() *http.Client {
 }
 
 func (c *Client) url(parts ...string) string {
-	return strings.TrimSuffix(c.Base, "/") + "/api/v1/tenants/" + c.Tenant + "/git-connections" + strings.Join(parts, "")
+	return strings.TrimSuffix(c.Base, "/") + "/api/v1/tenants/" + url.PathEscape(c.Tenant) + "/git-connections" + strings.Join(parts, "")
 }
 
 type problem struct {
@@ -126,7 +127,7 @@ func (c *Client) Authorize(ctx context.Context, provider, apiBase string) (strin
 	if apiBase != "" {
 		body["apiBase"] = apiBase
 	}
-	req, err := c.newRequest(ctx, http.MethodPost, c.url("/", provider, "/authorize"), body)
+	req, err := c.newRequest(ctx, http.MethodPost, c.url("/", url.PathEscape(provider), "/authorize"), body)
 	if err != nil {
 		return "", err
 	}
@@ -164,7 +165,7 @@ func (c *Client) Authorize(ctx context.Context, provider, apiBase string) (strin
 
 // Disconnect revokes the provider grant and deletes the connection server-side.
 func (c *Client) Disconnect(ctx context.Context, provider string) error {
-	req, err := c.newRequest(ctx, http.MethodDelete, c.url("/", provider), nil)
+	req, err := c.newRequest(ctx, http.MethodDelete, c.url("/", url.PathEscape(provider)), nil)
 	if err != nil {
 		return err
 	}
