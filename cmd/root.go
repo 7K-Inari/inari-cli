@@ -34,6 +34,7 @@ Core flows:
   catalog     Browse the tenant/cluster-filtered service catalog
   deploy      Deploy a catalog item (interactive wizard or --file/--set for CI)
   resources   Inspect resource instances across clusters with health/status
+  git         Connect your personal git provider account (GitHub social login)
   extension   Scaffold a backend or UI extension
 
 Configuration lives in ~/.config/inari/ with kubectl-style contexts
@@ -66,6 +67,7 @@ Configuration lives in ~/.config/inari/ with kubectl-style contexts
 	root.AddCommand(newCatalogCmd(opts))
 	root.AddCommand(newDeployCmd(opts))
 	root.AddCommand(newResourcesCmd(opts))
+	root.AddCommand(newGitCmd(opts))
 	root.AddCommand(newExtensionCmd(opts))
 
 	return root

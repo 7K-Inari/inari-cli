@@ -20,33 +20,9 @@ type Client struct {
 
 // New builds an authenticated client for the given config context.
 func New(ctx context.Context, contextName string, cc config.Context) (*Client, error) {
-	cache, err := auth.NewCache()
+	tok, err := auth.SessionToken(ctx, contextName, cc)
 	if err != nil {
 		return nil, err
-	}
-	tok, err := cache.Load(contextName)
-	if err != nil {
-		return nil, err
-	}
-	if tok == nil {
-		return nil, fmt.Errorf("not logged in for context %q; run 'inari login'", contextName)
-	}
-	if !tok.Valid() {
-		if tok.RefreshToken == "" {
-			return nil, fmt.Errorf("session expired and no refresh token is cached; run 'inari login'")
-		}
-		issuer := cc.Issuer
-		if issuer == "" {
-			return nil, fmt.Errorf("context %q has no issuer configured; run 'inari login' again", contextName)
-		}
-		flow := &auth.DeviceFlow{Issuer: issuer, ClientID: auth.DefaultClientID}
-		tok, err = flow.Refresh(ctx, tok.RefreshToken)
-		if err != nil {
-			return nil, fmt.Errorf("refreshing session: %w (run 'inari login')", err)
-		}
-		if err := cache.Save(contextName, tok); err != nil {
-			return nil, err
-		}
 	}
 
 	raw, err := oas.NewClientWithResponses(
