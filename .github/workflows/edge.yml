@@ -1,0 +1,107 @@
+name: edge
+
+# Per-merge edge releases: every push to main builds the CLI with goreleaser
+# (snapshot mode — no brew/scoop/AUR publishing) and attaches the archives
+# to a GitHub prerelease vX.Y.Z-edge.<sha>. Skipped on release merges —
+# release.yml covers that commit.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: edge-main
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.gate.outputs.skip }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Skip on release merges
+        id: gate
+        run: |
+          set -euo pipefail
+          msg="$(git log -1 --pretty=%s)"
+          parent2=""
+          if [ "$(git rev-list --parents -n1 HEAD | wc -w)" -gt 2 ]; then
+            parent2="$(git log -1 --pretty=%s HEAD^2)"
+          fi
+          if echo "$msg" | grep -qiE '^chore(\(.*\))?: release' \
+             || echo "$parent2" | grep -qiE '^chore(\(.*\))?: release'; then
+            echo "release merge detected ($msg) — skipping edge"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  version:
+    needs: gate
+    if: needs.gate.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      edge: ${{ steps.v.outputs.edge }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve edge version
+        id: v
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "edge=$(scripts/resolve-edge-version.sh .)" >> "$GITHUB_OUTPUT"
+
+  goreleaser:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Tag the edge version for goreleaser
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EDGE: ${{ needs.version.outputs.edge }}
+        # Goreleaser derives the version from the git tag; the prerelease
+        # job below publishes the same tag to GitHub.
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "v${EDGE}"
+          git push origin "v${EDGE}"
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          # --snapshot: no package-manager publishing, archives only; the
+          # release is created by goreleaser against the edge tag and marked
+          # prerelease by the final step.
+          args: release --clean --snapshot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload snapshot archives to the edge prerelease
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EDGE: ${{ needs.version.outputs.edge }}
+        run: |
+          shopt -s nullglob
+          files=(dist/*.tar.gz dist/*.zip dist/checksums.txt)
+          gh release create "v${EDGE}" \
+            --prerelease \
+            --title "edge ${EDGE}" \
+            --notes "Edge build from ${GITHUB_SHA} (goreleaser snapshot archives attached). Superseded by the next stable vX.Y.Z release."
+          if [ "${#files[@]}" -gt 0 ]; then
+            gh release upload "v${EDGE}" "${files[@]}" --clobber
+          fi
