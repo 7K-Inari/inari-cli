@@ -98,10 +98,14 @@ jobs:
         run: |
           shopt -s nullglob
           files=(dist/*.tar.gz dist/*.zip dist/checksums.txt)
-          gh release create "v${EDGE}" \
-            --prerelease \
-            --title "edge ${EDGE}" \
-            --notes "Edge build from ${GITHUB_SHA} (goreleaser snapshot archives attached). Superseded by the next stable vX.Y.Z release."
+          if gh release view "v${EDGE}" > /dev/null 2>&1; then
+            echo "prerelease v${EDGE} already exists — skipping create (workflow rerun)"
+          else
+            gh release create "v${EDGE}" \
+              --prerelease \
+              --title "edge ${EDGE}" \
+              --notes "Edge build from ${GITHUB_SHA} (goreleaser snapshot archives attached). Superseded by the next stable vX.Y.Z release."
+          fi
           if [ "${#files[@]}" -gt 0 ]; then
             gh release upload "v${EDGE}" "${files[@]}" --clobber
           fi
