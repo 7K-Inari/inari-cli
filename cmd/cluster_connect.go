@@ -17,8 +17,8 @@ import (
 )
 
 func newClusterConnectCmd(opts *GlobalOptions) *cobra.Command {
-	var server, grantType, kubeconfigPath string
-	var gateway, setCurrent bool
+	var server, grantType, kubeconfigPath, org string
+	var setCurrent bool
 	c := &cobra.Command{
 		Use:   "connect CLUSTER_ID",
 		Short: "Merge a secret-free kubeconfig for a cluster into your kubeconfig",
@@ -37,6 +37,7 @@ kubectl authentication happens at exec time via kubelogin — no secrets are
 ever written to the file.`,
 		Args: cobra.ExactArgs(1),
 		Example: `  inari cluster connect clu-1
+  inari cluster connect clu-1 --org acme
   inari cluster connect clu-1 --server https://api.prod:6443
   inari cluster connect clu-1 --kubeconfig ~/.kube/prod --set-current-context=false`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -50,6 +51,9 @@ ever written to the file.`,
 			_, cc, err := opts.resolveContext()
 			if err != nil {
 				return err
+			}
+			if org != "" {
+				cc.Tenant = org
 			}
 			if err := requireTenant(cc); err != nil {
 				return err
@@ -78,8 +82,6 @@ ever written to the file.`,
 				}
 				fmt.Fprintf(opts.ErrOut, "Warning: no tunnel-agent session is live for cluster %s%s; the gateway context will not work until the agent connects.\n", clusterID, reason)
 			}
-			_ = gateway // gateway is the only render mode; the flag documents intent
-
 			params := &oas.GetClusterKubeconfigParams{
 				Mode:      &mode,
 				GrantType: (*oas.GetClusterKubeconfigParamsGrantType)(&grantType),
@@ -125,7 +127,7 @@ ever written to the file.`,
 			return nil
 		},
 	}
-	c.Flags().BoolVar(&gateway, "gateway", false, "Use the control plane's impersonating proxy (default; kept for symmetry with 'cluster kubeconfig')")
+	c.Flags().StringVar(&org, "org", "", "Tenant slug override (default: tenant from the current context)")
 	c.Flags().StringVar(&server, "server", "", "Tenant cluster API server URL; adds a <name>-direct context alongside the gateway context")
 	c.Flags().StringVar(&kubeconfigPath, "kubeconfig", "", "Kubeconfig file to merge into (default: $KUBECONFIG or ~/.kube/config)")
 	c.Flags().BoolVar(&setCurrent, "set-current-context", true, "Set the current context to the gateway context")

@@ -473,6 +473,31 @@ func TestClusterConnectWarnsWhenTunnelUnavailable(t *testing.T) {
 	}
 }
 
+func TestClusterConnectOrgOverride(t *testing.T) {
+	var gotPath string
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		if strings.HasSuffix(r.URL.Path, "/access-info") {
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{"accessInfo": map[string]any{"tunnelAvailable": true}})
+			return
+		}
+		w.Header().Set("Content-Type", "application/yaml")
+		_, _ = w.Write([]byte(connectKubeconfigYAML))
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	kubeconfig := filepath.Join(t.TempDir(), "config")
+	_, _, err := runConnect(t, srv, "--kubeconfig", kubeconfig, "--org", "other-org")
+	if err != nil {
+		t.Fatalf("connect error = %v", err)
+	}
+	if !strings.HasPrefix(gotPath, "/api/v1/tenants/other-org/") {
+		t.Errorf("expected tenant override in request path, got %q", gotPath)
+	}
+}
+
 func TestClusterConnectFailsWhenKubectlAccessDisabled(t *testing.T) {
 	srv := connectServer(t, map[string]any{"kubectlAccessEnabled": false, "tunnelAvailable": true}, false)
 	kubeconfig := filepath.Join(t.TempDir(), "config")
