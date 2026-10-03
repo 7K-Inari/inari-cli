@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.5.0](https://github.com/7K-Inari/inari-cli/compare/v0.4.2...v0.5.0) (2026-10-03)
+
+
+### Features
+
+* add 'inari cluster connect' merging server-rendered kubeconfig ([#25](https://github.com/7K-Inari/inari-cli/issues/25)) ([8243b82](https://github.com/7K-Inari/inari-cli/commit/8243b82f9773d97f5fe2adce6568539d9bbdf7cc))
+* add 'inari git connect/list/status/disconnect' for per-user git social login ([fa4b141](https://github.com/7K-Inari/inari-cli/commit/fa4b14129141305d9c7a16b88e1b0e4e9dc7fe6e))
+* add 'inari git connect/list/status/disconnect' for per-user git social login ([40edf46](https://github.com/7K-Inari/inari-cli/commit/40edf4642d0d3b5ee9cf6491ab5b2941c69d9e33))
+* **release:** per-merge edge releases (vX.Y.Z-&lt;sha&gt; + moving edge channel) ([#20](https://github.com/7K-Inari/inari-cli/issues/20)) ([1652f2a](https://github.com/7K-Inari/inari-cli/commit/1652f2ab9b7c558f84d2ed26b764075d647f7fee))
+
+
+### Miscellaneous Chores
+
+* **deps:** pin dependencies ([#21](https://github.com/7K-Inari/inari-cli/issues/21)) ([9417ed5](https://github.com/7K-Inari/inari-cli/commit/9417ed59580809ab1d1d8557dd82772deccf6fe9))
+* **deps:** update github-actions ([#24](https://github.com/7K-Inari/inari-cli/issues/24)) ([25d6349](https://github.com/7K-Inari/inari-cli/commit/25d6349f1b3e8ab6a0b14b86216e9e17b7c9f6a8))
+* **deps:** update module github.com/7k-inari/inari-api to v0.6.0 ([#22](https://github.com/7K-Inari/inari-cli/issues/22)) ([301a2fa](https://github.com/7K-Inari/inari-cli/commit/301a2fa947d8f4360e7181cdca14a718816fb20b))
+
 ## [0.4.2](https://github.com/7K-Inari/inari-cli/compare/v0.4.1...v0.4.2) (2026-09-15)
 
 
