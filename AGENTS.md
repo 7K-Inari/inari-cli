@@ -1,6 +1,6 @@
 # inari-cli — Agent Guide
 
-The `inari` CLI: login (OIDC device flow), cluster/catalog/resource ops, agent install, extension scaffolding (`inari extension init`) (plan §6 #9). `inari cluster kubeconfig <id>` prints a secret-free kubelogin exec-credential kubeconfig from the server's cluster access-info endpoint (plan §7.2).
+The `inari` CLI: login (OIDC device flow), cluster/catalog/resource ops, agent install, extension scaffolding (`inari extension init`) (plan §6 #9). `inari cluster kubeconfig <id>` prints a secret-free kubelogin exec-credential kubeconfig from the server's cluster access-info endpoint (plan §7.2). `inari cluster connect <id>` fetches the server-rendered kubeconfig (`GET .../kubeconfig?mode=&grantType=&server=`) and merges it into `~/.kube/config` via client-go `clientcmd` (`--server` adds a `-direct` context, Rancher ACE dual-context style).
 
 Stack: Go, cobra
 
