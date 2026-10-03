@@ -498,6 +498,65 @@ func TestClusterConnectOrgOverride(t *testing.T) {
 	}
 }
 
+func TestMergeKubeconfigEmptyExistingFile(t *testing.T) {
+	kubeconfig := filepath.Join(t.TempDir(), "config")
+	if err := os.WriteFile(kubeconfig, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	name, err := mergeKubeconfig([]byte(connectKubeconfigYAML), kubeconfig, true)
+	if err != nil {
+		t.Fatalf("merge into empty file: %v", err)
+	}
+	if name != "acme-clu-1" {
+		t.Errorf("name = %q, want acme-clu-1", name)
+	}
+}
+
+func TestMergeKubeconfigNeverBlanksCurrentContext(t *testing.T) {
+	kubeconfig := filepath.Join(t.TempDir(), "config")
+	existing := `apiVersion: v1
+kind: Config
+clusters:
+- name: other
+  cluster:
+    server: https://other:6443
+users:
+- name: other
+  user: {}
+contexts:
+- name: other
+  context:
+    cluster: other
+    user: other
+current-context: other
+`
+	if err := os.WriteFile(kubeconfig, []byte(existing), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	rendered := strings.Replace(connectKubeconfigYAML, "current-context: acme-clu-1\n", "", 1)
+	name, err := mergeKubeconfig([]byte(rendered), kubeconfig, true)
+	if err != nil {
+		t.Fatalf("merge: %v", err)
+	}
+	if name != "acme-clu-1" {
+		t.Errorf("name = %q, want acme-clu-1 (fall back to single rendered context)", name)
+	}
+	got := loadKubeconfigFile(t, kubeconfig)
+	if !strings.Contains(got, "current-context: acme-clu-1") {
+		t.Errorf("current-context should fall back to rendered context, not be blanked:\n%s", got)
+	}
+}
+
+func TestMergeKubeconfigInvalidRendered(t *testing.T) {
+	kubeconfig := filepath.Join(t.TempDir(), "config")
+	if _, err := mergeKubeconfig([]byte("{{{{not yaml"), kubeconfig, true); err == nil {
+		t.Fatal("want parse error for invalid rendered kubeconfig")
+	}
+	if _, statErr := os.Stat(kubeconfig); !os.IsNotExist(statErr) {
+		t.Errorf("kubeconfig should not be created on parse failure")
+	}
+}
+
 func TestClusterConnectFailsWhenKubectlAccessDisabled(t *testing.T) {
 	srv := connectServer(t, map[string]any{"kubectlAccessEnabled": false, "tunnelAvailable": true}, false)
 	kubeconfig := filepath.Join(t.TempDir(), "config")

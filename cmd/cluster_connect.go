@@ -146,6 +146,17 @@ func mergeKubeconfig(rendered []byte, path string, setCurrent bool) (string, err
 	if len(newCfg.Contexts) == 0 {
 		return "", fmt.Errorf("server-rendered kubeconfig contains no contexts")
 	}
+	if setCurrent && newCfg.CurrentContext == "" {
+		// Never blank the user's existing current-context; fall back to the
+		// single rendered context or fail loudly.
+		if len(newCfg.Contexts) == 1 {
+			for name := range newCfg.Contexts {
+				newCfg.CurrentContext = name
+			}
+		} else {
+			return "", fmt.Errorf("server-rendered kubeconfig has no current-context")
+		}
+	}
 
 	var existing *clientcmdapi.Config
 	loaded, err := clientcmd.LoadFromFile(path)
