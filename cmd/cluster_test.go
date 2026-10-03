@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -269,5 +271,216 @@ func TestClusterKubeconfigRejectsIncompleteAccessInfo(t *testing.T) {
 	err := root.Execute()
 	if err == nil || !strings.Contains(err.Error(), "incomplete access info") {
 		t.Fatalf("want incomplete access info error, got %v", err)
+	}
+}
+
+// --- cluster connect ---
+
+const connectKubeconfigYAML = `apiVersion: v1
+kind: Config
+clusters:
+- name: acme-clu-1
+  cluster:
+    server: https://gateway.example.com/acme/clu-1
+users:
+- name: acme-clu-1
+  user:
+    exec:
+      apiVersion: client.authentication.k8s.io/v1
+      command: kubectl
+      args: ["oidc-login", "get-token"]
+contexts:
+- name: acme-clu-1
+  context:
+    cluster: acme-clu-1
+    user: acme-clu-1
+current-context: acme-clu-1
+`
+
+const connectDirectContextYAML = `- name: acme-clu-1-direct
+  context:
+    cluster: acme-clu-1-direct
+    user: acme-clu-1
+`
+
+// connectServer serves access-info (with the given extra fields) and a
+// server-rendered kubeconfig that optionally includes a -direct context.
+func connectServer(t *testing.T, accessInfo map[string]any, withDirect bool) *httptest.Server {
+	t.Helper()
+	base := map[string]any{
+		"issuerUrl":       "https://keycloak.example.com/realms/inari",
+		"kubectlClientId": "org-acme-kubectl",
+		"audience":        "kubernetes",
+		"organization":    "acme",
+	}
+	for k, v := range accessInfo {
+		base[k] = v
+	}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/v1/tenants/acme/clusters/clu-1/access-info", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"accessInfo": base})
+	})
+	mux.HandleFunc("/api/v1/tenants/acme/clusters/clu-1/kubeconfig", func(w http.ResponseWriter, r *http.Request) {
+		yaml := connectKubeconfigYAML
+		if r.URL.Query().Get("server") != "" || withDirect {
+			yaml = strings.Replace(connectKubeconfigYAML, "current-context:",
+				connectDirectContextYAML+"current-context:", 1)
+			// add the direct cluster entry too
+			yaml = strings.Replace(yaml, "users:\n",
+				"- name: acme-clu-1-direct\n  cluster:\n    server: "+r.URL.Query().Get("server")+"\nusers:\n", 1)
+		}
+		w.Header().Set("Content-Type", "application/yaml")
+		_, _ = w.Write([]byte(yaml))
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func runConnect(t *testing.T, srv *httptest.Server, args ...string) (string, string, error) {
+	t.Helper()
+	out := setupAuthedContext(t, srv.URL)
+	errOut := &bytes.Buffer{}
+	root := NewRootCmd("dev", "none", "now", out, errOut)
+	root.SetArgs(append([]string{"cluster", "connect", "clu-1"}, args...))
+	err := root.Execute()
+	return out.String(), errOut.String(), err
+}
+
+func loadKubeconfigFile(t *testing.T, path string) string {
+	t.Helper()
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read kubeconfig: %v", err)
+	}
+	return string(b)
+}
+
+func TestClusterConnectMergesIntoEmptyKubeconfig(t *testing.T) {
+	srv := connectServer(t, map[string]any{"tunnelAvailable": true}, false)
+	kubeconfig := filepath.Join(t.TempDir(), "config")
+	_, _, err := runConnect(t, srv, "--kubeconfig", kubeconfig)
+	if err != nil {
+		t.Fatalf("connect error = %v", err)
+	}
+	got := loadKubeconfigFile(t, kubeconfig)
+	if !strings.Contains(got, "acme-clu-1") {
+		t.Errorf("merged kubeconfig missing context:\n%s", got)
+	}
+	if !strings.Contains(got, "current-context: acme-clu-1") {
+		t.Errorf("current-context not set:\n%s", got)
+	}
+}
+
+func TestClusterConnectDualContext(t *testing.T) {
+	srv := connectServer(t, map[string]any{"tunnelAvailable": true}, false)
+	kubeconfig := filepath.Join(t.TempDir(), "config")
+	_, _, err := runConnect(t, srv, "--kubeconfig", kubeconfig, "--server", "https://api.prod:6443")
+	if err != nil {
+		t.Fatalf("connect error = %v", err)
+	}
+	got := loadKubeconfigFile(t, kubeconfig)
+	for _, want := range []string{"acme-clu-1\n", "acme-clu-1-direct", "current-context: acme-clu-1\n"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("merged kubeconfig missing %q:\n%s", want, got)
+		}
+	}
+}
+
+func TestClusterConnectNoSetCurrentContext(t *testing.T) {
+	srv := connectServer(t, map[string]any{"tunnelAvailable": true}, false)
+	kubeconfig := filepath.Join(t.TempDir(), "config")
+	existing := `apiVersion: v1
+kind: Config
+clusters:
+- name: other
+  cluster:
+    server: https://other:6443
+users:
+- name: other
+  user: {}
+contexts:
+- name: other
+  context:
+    cluster: other
+    user: other
+current-context: other
+`
+	if err := os.WriteFile(kubeconfig, []byte(existing), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, _, err := runConnect(t, srv, "--kubeconfig", kubeconfig, "--set-current-context=false")
+	if err != nil {
+		t.Fatalf("connect error = %v", err)
+	}
+	got := loadKubeconfigFile(t, kubeconfig)
+	if !strings.Contains(got, "current-context: other") {
+		t.Errorf("current-context should be preserved:\n%s", got)
+	}
+	if !strings.Contains(got, "acme-clu-1") || !strings.Contains(got, "other") {
+		t.Errorf("expected both contexts:\n%s", got)
+	}
+}
+
+func TestClusterConnectReplacesDuplicateContext(t *testing.T) {
+	srv := connectServer(t, map[string]any{"tunnelAvailable": true}, false)
+	kubeconfig := filepath.Join(t.TempDir(), "config")
+	existing := `apiVersion: v1
+kind: Config
+clusters:
+- name: acme-clu-1
+  cluster:
+    server: https://stale:6443
+users:
+- name: acme-clu-1
+  user: {}
+contexts:
+- name: acme-clu-1
+  context:
+    cluster: acme-clu-1
+    user: acme-clu-1
+current-context: acme-clu-1
+`
+	if err := os.WriteFile(kubeconfig, []byte(existing), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, _, err := runConnect(t, srv, "--kubeconfig", kubeconfig)
+	if err != nil {
+		t.Fatalf("connect error = %v", err)
+	}
+	got := loadKubeconfigFile(t, kubeconfig)
+	if strings.Contains(got, "stale") {
+		t.Errorf("stale entry should be replaced:\n%s", got)
+	}
+	if n := strings.Count(got, "name: acme-clu-1"); n != 3 { // cluster + user + context
+		t.Errorf("expected 3 acme-clu-1 entries, got %d:\n%s", n, got)
+	}
+}
+
+func TestClusterConnectWarnsWhenTunnelUnavailable(t *testing.T) {
+	srv := connectServer(t, map[string]any{
+		"tunnelAvailable":         false,
+		"tunnelUnavailableReason": "agent not connected",
+	}, false)
+	kubeconfig := filepath.Join(t.TempDir(), "config")
+	_, errOut, err := runConnect(t, srv, "--kubeconfig", kubeconfig)
+	if err != nil {
+		t.Fatalf("connect error = %v", err)
+	}
+	if !strings.Contains(errOut, "tunnel") || !strings.Contains(errOut, "agent not connected") {
+		t.Errorf("expected tunnel warning on stderr, got %q", errOut)
+	}
+}
+
+func TestClusterConnectFailsWhenKubectlAccessDisabled(t *testing.T) {
+	srv := connectServer(t, map[string]any{"kubectlAccessEnabled": false, "tunnelAvailable": true}, false)
+	kubeconfig := filepath.Join(t.TempDir(), "config")
+	_, _, err := runConnect(t, srv, "--kubeconfig", kubeconfig)
+	if err == nil || !strings.Contains(err.Error(), "kubectl access") {
+		t.Fatalf("want kubectl access error, got %v", err)
+	}
+	if _, statErr := os.Stat(kubeconfig); !os.IsNotExist(statErr) {
+		t.Errorf("kubeconfig should not be written on failure")
 	}
 }

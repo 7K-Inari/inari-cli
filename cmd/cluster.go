@@ -14,7 +14,7 @@ func newClusterCmd(opts *GlobalOptions) *cobra.Command {
 		Use:   "cluster",
 		Short: "Register and inspect tenant Kubernetes clusters",
 	}
-	c.AddCommand(newClusterRegisterCmd(opts), newClusterListCmd(opts), newClusterKubeconfigCmd(opts))
+	c.AddCommand(newClusterRegisterCmd(opts), newClusterListCmd(opts), newClusterKubeconfigCmd(opts), newClusterConnectCmd(opts))
 	return c
 }
 
