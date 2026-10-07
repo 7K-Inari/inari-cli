@@ -118,8 +118,11 @@ func newClusterListCmd(opts *GlobalOptions) *cobra.Command {
 }
 
 // clusterIDRe pins the cluster ID charset the kubeconfig renderer can
-// embed safely (it lands unquoted in YAML names and URL paths).
-var clusterIDRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
+// embed safely (it lands unquoted in YAML names and URL paths). ':'
+// admits the canonical server-issued cluster:<uuid> shape; the full
+// valid/invalid set is pinned by the inari-api contract/clusterids
+// testdata (see cluster_contract_test.go).
+var clusterIDRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:-]*$`)
 
 func newClusterKubeconfigCmd(opts *GlobalOptions) *cobra.Command {
 	var server, grantType string
