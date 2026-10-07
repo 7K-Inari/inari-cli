@@ -1,13 +1,5 @@
-github.com/7K-Inari/inari-api v0.6.1-0.20261003055153-3d2f7dc46ca7 h1:EWxuJlSKObpVXEhxz/sgKxqGawUH8SC0NyiLZzM8S7Q=
-github.com/7K-Inari/inari-api v0.6.1-0.20261003055153-3d2f7dc46ca7/go.mod h1:K/nclQUG5E7bTEm9gq8KC+kndBECn+ZM7U84hmlSM7Y=
-github.com/7K-Inari/inari-api v0.6.1-0.20261005132734-1445c881f718 h1:zu9oCIHezQV1DmUxUA5RGX+1Rw+euGrE5CVE6J+Eo5A=
-github.com/7K-Inari/inari-api v0.6.1-0.20261005132734-1445c881f718/go.mod h1:K/nclQUG5E7bTEm9gq8KC+kndBECn+ZM7U84hmlSM7Y=
-github.com/7K-Inari/inari-api v0.6.1-0.20261005163531-2f3b0a2d4473 h1:hiz8JIzvejNW4n2t554XxCI/eC0hxoi0bT/Dcyi1JlQ=
-github.com/7K-Inari/inari-api v0.6.1-0.20261005163531-2f3b0a2d4473/go.mod h1:K/nclQUG5E7bTEm9gq8KC+kndBECn+ZM7U84hmlSM7Y=
-github.com/7K-Inari/inari-api v0.6.1-0.20261006112808-a5cf4efeb47d h1:+bL6/5/4hSVhvg6k0huhvdOsSsr//Ak0JF1E9NEWGXo=
-github.com/7K-Inari/inari-api v0.6.1-0.20261006112808-a5cf4efeb47d/go.mod h1:K/nclQUG5E7bTEm9gq8KC+kndBECn+ZM7U84hmlSM7Y=
-github.com/7K-Inari/inari-api v0.6.1-0.20261006163044-41c759c60f3c h1:Av00WipOhQ/K9SI77BZBefJJ3NT2Bt4scF1GRVVGMdE=
-github.com/7K-Inari/inari-api v0.6.1-0.20261006163044-41c759c60f3c/go.mod h1:K/nclQUG5E7bTEm9gq8KC+kndBECn+ZM7U84hmlSM7Y=
+github.com/7K-Inari/inari-api v0.6.1-0.20261007164457-ecc36cc4c666 h1:4OFlqQtCFpKTlNZpH9E6H4UjHtVpVGBROEigQAoqoTk=
+github.com/7K-Inari/inari-api v0.6.1-0.20261007164457-ecc36cc4c666/go.mod h1:K/nclQUG5E7bTEm9gq8KC+kndBECn+ZM7U84hmlSM7Y=
 github.com/AlecAivazis/survey/v2 v2.3.7 h1:6I/u8FvytdGsgonrYsVn2t8t4QiRnh6QSTqkkhIiSjQ=
 github.com/AlecAivazis/survey/v2 v2.3.7/go.mod h1:xUTIdE4KCOIjsBAE1JYsUPoCqYdZ1reCfTwbto0Fduo=
 github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2 h1:+vx7roKuyA63nhn5WAunQHLTznkw5W8b1Xc0dNjp83s=
