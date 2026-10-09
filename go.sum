@@ -8,6 +8,8 @@ github.com/7K-Inari/inari-api v0.6.1-0.20261008193724-f311c232c21e h1:XTzgEUM0Db
 github.com/7K-Inari/inari-api v0.6.1-0.20261008193724-f311c232c21e/go.mod h1:qJpxTYSfjIoHOWi1umIOqfs8DAx9aoY5tonicHrKSj0=
 github.com/7K-Inari/inari-api v0.6.1-0.20261009102856-23396effdec3 h1:VwleDOrQsTo2b3Il3gpYsYD1sY4yVhEz0KmMRWPuljM=
 github.com/7K-Inari/inari-api v0.6.1-0.20261009102856-23396effdec3/go.mod h1:qJpxTYSfjIoHOWi1umIOqfs8DAx9aoY5tonicHrKSj0=
+github.com/7K-Inari/inari-api v0.6.1-0.20261009142936-5fd61980b76c h1:987AbS/KsFJVmAj8aAei1LnoWpvvkMMKU1MhwKIUJI8=
+github.com/7K-Inari/inari-api v0.6.1-0.20261009142936-5fd61980b76c/go.mod h1:qJpxTYSfjIoHOWi1umIOqfs8DAx9aoY5tonicHrKSj0=
 github.com/AlecAivazis/survey/v2 v2.3.7 h1:6I/u8FvytdGsgonrYsVn2t8t4QiRnh6QSTqkkhIiSjQ=
 github.com/AlecAivazis/survey/v2 v2.3.7/go.mod h1:xUTIdE4KCOIjsBAE1JYsUPoCqYdZ1reCfTwbto0Fduo=
 github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2 h1:+vx7roKuyA63nhn5WAunQHLTznkw5W8b1Xc0dNjp83s=
