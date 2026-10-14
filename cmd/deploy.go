@@ -210,27 +210,21 @@ func printDecision(opts *GlobalOptions, d oas.PolicyDecision) error {
 }
 
 func pickSchema(item oas.ItemView, version string) any {
-	derefSchema := func(s *interface{}) any {
-		if s == nil {
-			return nil
-		}
-		return *s
-	}
 	if item.Versions == nil {
 		return nil
 	}
 	if version != "" {
 		for _, v := range *item.Versions {
 			if v.Version == version {
-				return derefSchema(v.Schema)
+				return v.Schema
 			}
 		}
 		return nil
 	}
 	for _, v := range *item.Versions {
 		if v.Channel == "stable" {
-			return derefSchema(v.Schema)
+			return v.Schema
 		}
 	}
-	return derefSchema((*item.Versions)[0].Schema)
+	return (*item.Versions)[0].Schema
 }

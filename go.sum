@@ -20,6 +20,8 @@ github.com/7K-Inari/inari-api v0.6.1-0.20261013192734-30a4787880ba h1:SwM0f2brX5
 github.com/7K-Inari/inari-api v0.6.1-0.20261013192734-30a4787880ba/go.mod h1:aiBp/CRETJt9sGHNDd9Pkyqmt69nn6w1oC/p8eEBEeY=
 github.com/7K-Inari/inari-api v0.6.1-0.20261014151742-d8e982764426 h1:tyJy3mUkBGAesb2PfE05a5pmMWhfT+F5426XA61VndU=
 github.com/7K-Inari/inari-api v0.6.1-0.20261014151742-d8e982764426/go.mod h1:+cyP3+flr2pCH5bkGtev+sOw1NSY1OjsQc0Br5etcJE=
+github.com/7K-Inari/inari-api v0.6.1-0.20261014162811-64180114b63f h1:Hp3UZZu280JwZyBYkJl0PEFGOlFzcFynjYyvMHvELik=
+github.com/7K-Inari/inari-api v0.6.1-0.20261014162811-64180114b63f/go.mod h1:OS7gQuzp7Tp2sXmuzh+oQhtsC23O2YvzxGD2+rVfe6M=
 github.com/AlecAivazis/survey/v2 v2.3.7 h1:6I/u8FvytdGsgonrYsVn2t8t4QiRnh6QSTqkkhIiSjQ=
 github.com/AlecAivazis/survey/v2 v2.3.7/go.mod h1:xUTIdE4KCOIjsBAE1JYsUPoCqYdZ1reCfTwbto0Fduo=
 github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2 h1:+vx7roKuyA63nhn5WAunQHLTznkw5W8b1Xc0dNjp83s=
@@ -149,6 +151,8 @@ go.yaml.in/yaml/v2 v2.4.4 h1:tuyd0P+2Ont/d6e2rl3be67goVK4R6deVxCUX5vyPaQ=
 go.yaml.in/yaml/v2 v2.4.4/go.mod h1:gMZqIpDtDqOfM0uNfy0SkpRhvUryYH0Z6wdMYcacYXQ=
 go.yaml.in/yaml/v3 v3.0.4 h1:tfq32ie2Jv2UxXFdLJdh3jXuOzWiL1fo0bu/FbuKpbc=
 go.yaml.in/yaml/v3 v3.0.4/go.mod h1:DhzuOOF2ATzADvBadXxruRBLzYTpT36CKvDb3+aBEFg=
+go.yaml.in/yaml/v3 v3.0.5 h1:N6y/pJk8buWs9NY5ERU2HSMfm+IuD/OtfdAnq6kESPw=
+go.yaml.in/yaml/v3 v3.0.5/go.mod h1:HVTZu1O7/Vkt2N+BFy8Zza+lnLsABggaTM2ZpNIGuKg=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20210921155107-089bfa567519/go.mod h1:GvvjBRRGRdwPK5ydBHafDWAxML/pGHZbMvKqRZ5+Abc=
 golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4/go.mod h1:jJ57K6gSWd91VN4djpZkiMVwK6gcyfeH4XE8wZrZaV4=
