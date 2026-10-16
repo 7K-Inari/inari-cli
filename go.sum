@@ -28,6 +28,8 @@ github.com/7K-Inari/inari-api v0.7.0-180bdb0 h1:7inpPnvWXWZhEZIrmSLYWMOBeNO5e4FL
 github.com/7K-Inari/inari-api v0.7.0-180bdb0/go.mod h1:QU+trhc7m2Zua8g7/8DE7wFSzYRomZGfw2ahwpcbRoQ=
 github.com/7K-Inari/inari-api v0.7.0-ace8d88 h1:z5lAZoY0qD+HrGnoPbrHj8yzYWpwANLXe5dSpa5jgiw=
 github.com/7K-Inari/inari-api v0.7.0-ace8d88/go.mod h1:zhfkK+UKrXOaVb2GPzLos5Gtd7/VEbCirYU0EdOY3Vc=
+github.com/7K-Inari/inari-api v0.7.0-c2fef8b h1:FzB5CXoQd3WZhXeZMjTdV8jwTxRMxgENmY/LotJuFTM=
+github.com/7K-Inari/inari-api v0.7.0-c2fef8b/go.mod h1:KdruVohnlIWp5ouIK0o/I3z1DIqrF3AgPawds7PXs0c=
 github.com/AlecAivazis/survey/v2 v2.3.7 h1:6I/u8FvytdGsgonrYsVn2t8t4QiRnh6QSTqkkhIiSjQ=
 github.com/AlecAivazis/survey/v2 v2.3.7/go.mod h1:xUTIdE4KCOIjsBAE1JYsUPoCqYdZ1reCfTwbto0Fduo=
 github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2 h1:+vx7roKuyA63nhn5WAunQHLTznkw5W8b1Xc0dNjp83s=
@@ -53,6 +55,8 @@ github.com/getkin/kin-openapi v0.149.0 h1:ZbhmVJ4yq5RZDUsyP8lcBcGMsjsaTqXEFt6isd
 github.com/getkin/kin-openapi v0.149.0/go.mod h1:1+BHDzstro+P5CKtPy1X4PfofnFgmRe6uvMy9+r9fKY=
 github.com/getkin/kin-openapi v0.150.0 h1:7+O1HMsrAB4BevQDElbLAeCAWwyJC/RjQJYw4oosUUU=
 github.com/getkin/kin-openapi v0.150.0/go.mod h1:1+BHDzstro+P5CKtPy1X4PfofnFgmRe6uvMy9+r9fKY=
+github.com/getkin/kin-openapi v0.151.0 h1:p8NIstL53h620DnlO9R4pR4QRkEzJ3jbw9flb4kc1hg=
+github.com/getkin/kin-openapi v0.151.0/go.mod h1:1+BHDzstro+P5CKtPy1X4PfofnFgmRe6uvMy9+r9fKY=
 github.com/go-logr/logr v1.4.3 h1:CjnDlHq8ikf6E492q6eKboGOC0T8CDaOvkHCIg8idEI=
 github.com/go-logr/logr v1.4.3/go.mod h1:9T104GzyrTigFIr8wt5mBrctHMim0Nb2HLGrmQ40KvY=
 github.com/go-openapi/jsonpointer v1.0.0 h1:kR9tHqY0CtZaOPVFm622dPVNhrvYpwr4uCxgL3h1H8s=
