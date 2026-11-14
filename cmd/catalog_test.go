@@ -66,6 +66,30 @@ func TestCatalogListTable(t *testing.T) {
 	}
 }
 
+func TestCatalogListShowsUnsignedWarningAndDigests(t *testing.T) {
+	item := catalogItemFixture()
+	item["unsigned"] = true
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/v1/tenants/acme/catalog", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"items": []map[string]any{item}})
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	out := setupAuthedContext(t, srv.URL)
+	root := NewRootCmd("dev", "none", "now", out, &bytes.Buffer{})
+	root.SetArgs([]string{"catalog", "list"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"UNSIGNED", "DIGESTS", "development only", "sha256:52ccaee6d4dd272e54bfccda77738b42e1edf0e4a20c27e23f0b6c15d01aef79"} {
+		if !strings.Contains(out.String(), want) {
+			t.Errorf("catalog list missing %q: %s", want, out.String())
+		}
+	}
+}
+
 func TestCatalogDescribeCanonicalID(t *testing.T) {
 	srv := catalogFakeServer(t, func(r *http.Request) {
 		t.Errorf("canonical ID must not require a bare-name list lookup: %s", r.URL)

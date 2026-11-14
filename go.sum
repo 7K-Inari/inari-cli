@@ -1,5 +1,5 @@
-github.com/7K-Inari/inari-api v0.7.0-f0bdbad.0.20261114002054-c9c367b3f867 h1:ScMWIShdfZ1seUG8rdTh15GunQzvWNSBnzb9mDNClGM=
-github.com/7K-Inari/inari-api v0.7.0-f0bdbad.0.20261114002054-c9c367b3f867/go.mod h1:7g/rhMnq2gWf64r/JwBVDBzwGR655zHyMD8uwkPHSys=
+github.com/7K-Inari/inari-api v0.7.0-f0bdbad.0.20261114104150-f642b2fddbe0 h1:DqBgbM2p7R1y6o079KYkJqQ+lc7BhDtQf3Hriq9BU9w=
+github.com/7K-Inari/inari-api v0.7.0-f0bdbad.0.20261114104150-f642b2fddbe0/go.mod h1:7g/rhMnq2gWf64r/JwBVDBzwGR655zHyMD8uwkPHSys=
 github.com/AlecAivazis/survey/v2 v2.3.7 h1:6I/u8FvytdGsgonrYsVn2t8t4QiRnh6QSTqkkhIiSjQ=
 github.com/AlecAivazis/survey/v2 v2.3.7/go.mod h1:xUTIdE4KCOIjsBAE1JYsUPoCqYdZ1reCfTwbto0Fduo=
 github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2 h1:+vx7roKuyA63nhn5WAunQHLTznkw5W8b1Xc0dNjp83s=

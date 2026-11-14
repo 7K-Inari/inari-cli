@@ -57,10 +57,10 @@ func newCatalogListCmd(opts *GlobalOptions) *cobra.Command {
 				return printStructured(opts, *items)
 			}
 			tw := newTable(opts.Out)
-			fmt.Fprintln(tw, "NAME\tDISPLAY NAME\tID\tSOURCE\tTRUST\tVERSIONS\tAPPROVAL")
+			fmt.Fprintln(tw, "NAME\tDISPLAY NAME\tID\tSOURCE\tTRUST\tUNSIGNED\tVERSIONS\tDIGESTS\tAPPROVAL")
 			for _, it := range *items {
-				fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-					it.Name, it.DisplayName, it.Id, catalogSource(it), catalogTrust(it), catalogVersions(it), it.ApprovalPolicy)
+				fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+					it.Name, it.DisplayName, it.Id, catalogSource(it), catalogTrust(it), catalogUnsigned(it), catalogVersions(it), catalogDigests(it), it.ApprovalPolicy)
 			}
 			return tw.Flush()
 		},
@@ -151,6 +151,29 @@ func catalogTrust(it oas.ItemView) string {
 		return *it.TrustTier
 	}
 	return "-"
+}
+
+func catalogUnsigned(it oas.ItemView) string {
+	if it.Unsigned != nil && *it.Unsigned {
+		return "development only"
+	}
+	return "-"
+}
+
+func catalogDigests(it oas.ItemView) string {
+	if it.Versions == nil {
+		return ""
+	}
+	var digests []string
+	for _, v := range *it.Versions {
+		if v.ArtifactDigest != nil && *v.ArtifactDigest != "" {
+			digests = append(digests, *v.ArtifactDigest)
+		}
+		if v.ChartDigest != nil && *v.ChartDigest != "" {
+			digests = append(digests, "chart "+*v.ChartDigest)
+		}
+	}
+	return strings.Join(digests, ", ")
 }
 
 func catalogVersions(it oas.ItemView) string {
