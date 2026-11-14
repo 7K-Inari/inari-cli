@@ -51,6 +51,7 @@ func deployFakeServer(t *testing.T, onDeploy func(body map[string]any)) *httptes
 			"deploy": map[string]any{
 				"InstanceID": "inst-1", "Status": "Provisioning", "Version": "1.2.0",
 				"CommitSHA": "abc123", "PRURL": "https://git.example/pr/7", "ApprovalID": "",
+				"artifactDigest": "sha256:52ccaee6d4dd272e54bfccda77738b42e1edf0e4a20c27e23f0b6c15d01aef79",
 			},
 		})
 	})
@@ -82,6 +83,9 @@ func TestDeployNonInteractiveWithFileAndSet(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "inst-1") || !strings.Contains(out.String(), "https://git.example/pr/7") {
 		t.Errorf("deploy output = %q", out.String())
+	}
+	if !strings.Contains(out.String(), "Artifact digest: sha256:52ccaee6d4dd272e54bfccda77738b42e1edf0e4a20c27e23f0b6c15d01aef79") {
+		t.Errorf("deploy output missing admitted digest = %q", out.String())
 	}
 	if gotBody["clusterId"] != "clu-1" || gotBody["itemId"] != "core/postgres-aws" {
 		t.Fatalf("deploy body = %v", gotBody)

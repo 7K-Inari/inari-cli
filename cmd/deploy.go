@@ -152,6 +152,9 @@ printed.`,
 			}
 			d := rsp.JSON200.Deploy
 			fmt.Fprintf(opts.Out, "Deploy accepted: instance %s (status %s, version %s)\n", d.InstanceID, d.Status, d.Version)
+			if d.ArtifactDigest != nil && *d.ArtifactDigest != "" {
+				fmt.Fprintf(opts.Out, "Artifact digest: %s\n", *d.ArtifactDigest)
+			}
 			if d.CommitSHA != "" {
 				fmt.Fprintf(opts.Out, "Commit: %s\n", d.CommitSHA)
 			}
