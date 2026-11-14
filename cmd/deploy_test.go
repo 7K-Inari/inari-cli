@@ -34,7 +34,7 @@ func deployFakeServer(t *testing.T, onDeploy func(body map[string]any)) *httptes
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{"items": []map[string]any{item}})
 	})
-	mux.HandleFunc("/api/v1/tenants/acme/catalog/curated:postgres-aws", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v1/tenants/acme/catalog/core/postgres-aws", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{"item": item})
 	})
@@ -76,14 +76,14 @@ func TestDeployNonInteractiveWithFileAndSet(t *testing.T) {
 
 	out := setupAuthedContext(t, srv.URL)
 	root := NewRootCmd("dev", "none", "now", out, &bytes.Buffer{})
-	root.SetArgs([]string{"deploy", "postgres-aws", "--cluster", "clu-1", "--file", values, "--set", "replicas=3"})
+	root.SetArgs([]string{"deploy", "core/postgres-aws", "--cluster", "clu-1", "--file", values, "--set", "replicas=3"})
 	if err := root.Execute(); err != nil {
 		t.Fatalf("deploy error = %v", err)
 	}
 	if !strings.Contains(out.String(), "inst-1") || !strings.Contains(out.String(), "https://git.example/pr/7") {
 		t.Errorf("deploy output = %q", out.String())
 	}
-	if gotBody["clusterId"] != "clu-1" || gotBody["itemId"] != "curated:postgres-aws" {
+	if gotBody["clusterId"] != "clu-1" || gotBody["itemId"] != "core/postgres-aws" {
 		t.Fatalf("deploy body = %v", gotBody)
 	}
 	spec, ok := gotBody["spec"].(map[string]any)

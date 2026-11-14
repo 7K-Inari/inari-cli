@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -37,7 +36,7 @@ func setupAuthedContext(t *testing.T, server string) *bytes.Buffer {
 	return &bytes.Buffer{}
 }
 
-func TestClusterRegisterPrintsManifest(t *testing.T) {
+func TestClusterRegisterPrintsHelmInstall(t *testing.T) {
 	var gotBody map[string]any
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/tenants/acme/clusters", func(w http.ResponseWriter, r *http.Request) {
@@ -55,12 +54,15 @@ func TestClusterRegisterPrintsManifest(t *testing.T) {
 			},
 		})
 	})
-	manifest := "apiVersion: v1\nkind: Secret\nmetadata:\n  name: inari-agent-bootstrap\n"
-	mux.HandleFunc("/api/v1/tenants/acme/clusters/clu-1/install-manifest", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v1/tenants/acme/clusters/clu-1/tokens", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		if b, err := json.Marshal(base64.StdEncoding.EncodeToString([]byte(manifest))); err == nil {
-			_, _ = w.Write(b)
-		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"token": "one-time-token", "expiresAt": "2026-11-14T01:00:00Z",
+			"record": map[string]any{
+				"id": "token-1", "clusterId": "clu-1", "createdBy": "user:test",
+				"createdAt": "2026-11-14T00:00:00Z", "expiresAt": "2026-11-14T01:00:00Z",
+			},
+		})
 	})
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
@@ -72,8 +74,10 @@ func TestClusterRegisterPrintsManifest(t *testing.T) {
 	if err := root.Execute(); err != nil {
 		t.Fatalf("cluster register error = %v", err)
 	}
-	if !strings.Contains(out.String(), "inari-agent-bootstrap") {
-		t.Errorf("stdout should contain manifest, got %q", out.String())
+	for _, want := range []string{"helm install inari-agent", "config.tenantID=acme", "config.registrationToken=one-time-token"} {
+		if !strings.Contains(out.String(), want) {
+			t.Errorf("stdout missing %q, got %q", want, out.String())
+		}
 	}
 	if gotBody["name"] != "prod-eu" {
 		t.Errorf("request name = %v", gotBody["name"])
@@ -143,10 +147,12 @@ func accessInfoServer(t *testing.T) *httptest.Server {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"accessInfo": map[string]any{
-				"issuerUrl":       "https://keycloak.example.com/realms/inari",
-				"kubectlClientId": "org-acme-kubectl",
-				"audience":        "kubernetes",
-				"organization":    "acme",
+				"issuerUrl":            "https://keycloak.example.com/realms/inari",
+				"kubectlClientId":      "org-acme-kubectl",
+				"audience":             "kubernetes",
+				"organization":         "acme",
+				"kubectlAccessEnabled": true,
+				"tunnelAvailable":      true,
 			},
 		})
 	})
@@ -308,10 +314,11 @@ const connectDirectContextYAML = `- name: acme-clu-1-direct
 func connectServer(t *testing.T, accessInfo map[string]any, withDirect bool) *httptest.Server {
 	t.Helper()
 	base := map[string]any{
-		"issuerUrl":       "https://keycloak.example.com/realms/inari",
-		"kubectlClientId": "org-acme-kubectl",
-		"audience":        "kubernetes",
-		"organization":    "acme",
+		"kubectlAccessEnabled": true,
+		"issuerUrl":            "https://keycloak.example.com/realms/inari",
+		"kubectlClientId":      "org-acme-kubectl",
+		"audience":             "kubernetes",
+		"organization":         "acme",
 	}
 	for k, v := range accessInfo {
 		base[k] = v
@@ -480,7 +487,7 @@ func TestClusterConnectOrgOverride(t *testing.T) {
 		gotPath = r.URL.Path
 		if strings.HasSuffix(r.URL.Path, "/access-info") {
 			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]any{"accessInfo": map[string]any{"tunnelAvailable": true}})
+			_ = json.NewEncoder(w).Encode(map[string]any{"accessInfo": map[string]any{"kubectlAccessEnabled": true, "tunnelAvailable": true}})
 			return
 		}
 		w.Header().Set("Content-Type", "application/yaml")
