@@ -57,10 +57,10 @@ func newCatalogListCmd(opts *GlobalOptions) *cobra.Command {
 				return printStructured(opts, *items)
 			}
 			tw := newTable(opts.Out)
-			fmt.Fprintln(tw, "NAME\tDISPLAY NAME\tSOURCE\tVERSIONS\tAPPROVAL")
+			fmt.Fprintln(tw, "NAME\tDISPLAY NAME\tID\tSOURCE\tTRUST\tVERSIONS\tAPPROVAL")
 			for _, it := range *items {
-				fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n",
-					it.Name, it.DisplayName, it.Source, catalogVersions(it), it.ApprovalPolicy)
+				fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+					it.Name, it.DisplayName, it.Id, catalogSource(it), catalogTrust(it), catalogVersions(it), it.ApprovalPolicy)
 			}
 			return tw.Flush()
 		},
@@ -78,7 +78,7 @@ func newCatalogDescribeCmd(opts *GlobalOptions) *cobra.Command {
 policy, and (with -o json|yaml) the full OpenAPI v3 schema and UI hints used
 by 'inari deploy' to generate prompts.`,
 		Args:    cobra.ExactArgs(1),
-		Example: "  inari catalog describe postgres-aws\n  inari catalog describe postgres-aws -o yaml",
+		Example: "  inari catalog describe core/postgres-aws\n  inari catalog describe core/postgres-aws -o yaml",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, cc, err := opts.resolveContext()
 			if err != nil {
@@ -95,25 +95,24 @@ by 'inari deploy' to generate prompts.`,
 			if err != nil {
 				return err
 			}
-			params := &oas.GetCatalogItemParams{}
-			if cluster != "" {
-				params.Cluster = &cluster
-			}
-			rsp, err := client.OAS.GetCatalogItemWithResponse(cmd.Context(), cc.Tenant, itemID, params)
+			it, err := getCatalogItem(cmd.Context(), client, cc.Tenant, itemID, cluster)
 			if err != nil {
 				return err
 			}
-			if rsp.JSON200 == nil {
-				return apiError(rsp.Status(), rsp.ApplicationproblemJSONDefault)
-			}
-			it := rsp.JSON200.Item
 			if opts.Output == "json" || opts.Output == "yaml" {
 				return printStructured(opts, it)
 			}
 			fmt.Fprintf(opts.Out, "Name:        %s\n", it.Name)
 			fmt.Fprintf(opts.Out, "Display:     %s\n", it.DisplayName)
 			fmt.Fprintf(opts.Out, "ID:          %s\n", it.Id)
-			fmt.Fprintf(opts.Out, "Source:      %s\n", it.Source)
+			fmt.Fprintf(opts.Out, "Source:      %s\n", catalogSource(*it))
+			if it.SourceId != nil && *it.SourceId != "" {
+				fmt.Fprintf(opts.Out, "Kind:        %s\n", it.Source)
+			}
+			fmt.Fprintf(opts.Out, "Trust:       %s\n", catalogTrust(*it))
+			if it.Unsigned != nil && *it.Unsigned {
+				fmt.Fprintln(opts.Out, "Unsigned:    development only")
+			}
 			fmt.Fprintf(opts.Out, "Approval:    %s\n", it.ApprovalPolicy)
 			if it.PinnedVersion != nil {
 				fmt.Fprintf(opts.Out, "Pinned:      %s\n", *it.PinnedVersion)
@@ -125,6 +124,12 @@ by 'inari deploy' to generate prompts.`,
 				fmt.Fprintln(opts.Out, "Versions:")
 				for _, v := range *it.Versions {
 					fmt.Fprintf(opts.Out, "  %s (channel %s)\n", v.Version, v.Channel)
+					if v.ArtifactDigest != nil && *v.ArtifactDigest != "" {
+						fmt.Fprintf(opts.Out, "    Artifact digest: %s\n", *v.ArtifactDigest)
+					}
+					if v.ChartDigest != nil && *v.ChartDigest != "" {
+						fmt.Fprintf(opts.Out, "    Chart digest:    %s\n", *v.ChartDigest)
+					}
 				}
 			}
 			return nil
@@ -132,6 +137,20 @@ by 'inari deploy' to generate prompts.`,
 	}
 	c.Flags().StringVar(&cluster, "cluster", "", "Cluster ID; intersects discovered capabilities")
 	return c
+}
+
+func catalogSource(it oas.ItemView) string {
+	if it.SourceId != nil && *it.SourceId != "" {
+		return *it.SourceId
+	}
+	return it.Source
+}
+
+func catalogTrust(it oas.ItemView) string {
+	if it.TrustTier != nil && *it.TrustTier != "" {
+		return *it.TrustTier
+	}
+	return "-"
 }
 
 func catalogVersions(it oas.ItemView) string {

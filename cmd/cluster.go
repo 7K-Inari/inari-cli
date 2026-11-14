@@ -69,17 +69,16 @@ The manifest is printed to stdout by default so it can be piped directly:
 			cluster := rsp.JSON200.Cluster
 			fmt.Fprintf(opts.ErrOut, "Cluster %q registered (id %s, state %s).\n", cluster.Name, cluster.Id, cluster.State)
 
-			manifest, err := client.OAS.RenderInstallManifestWithResponse(cmd.Context(), cc.Tenant, cluster.Id)
+			token, err := client.OAS.IssueRegistrationTokenWithResponse(cmd.Context(), cc.Tenant, cluster.Id)
 			if err != nil {
 				return err
 			}
-			if manifest.JSON200 == nil {
-				return apiError(manifest.Status(), manifest.ApplicationproblemJSONDefault)
+			if token.JSON200 == nil {
+				return apiError(token.Status(), token.ApplicationproblemJSONDefault)
 			}
-			if _, err := opts.Out.Write(*manifest.JSON200); err != nil {
-				return err
-			}
-			fmt.Fprintln(opts.ErrOut, "\nThe manifest embeds a one-time registration token — treat it as a secret.")
+			fmt.Fprintln(opts.Out, "Install the agent with Helm:")
+			fmt.Fprintf(opts.Out, "helm install inari-agent oci://ghcr.io/7k-inari/charts/inari-agent \\\n  --set config.tenantID=%s \\\n  --set config.controlPlane=%s \\\n  --set config.registrationToken=%s\n", cc.Tenant, cc.Server, token.JSON200.Token)
+			fmt.Fprintf(opts.ErrOut, "\nThe one-time registration token expires at %s — treat it as a secret.\n", token.JSON200.ExpiresAt)
 			return nil
 		},
 	}
