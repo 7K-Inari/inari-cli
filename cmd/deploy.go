@@ -30,7 +30,7 @@ func newDeployCmd(opts *GlobalOptions) *cobra.Command {
 
 With --file and/or --set the deploy runs non-interactively (CI-friendly):
 
-  inari deploy postgres-aws --cluster clu-1 --file values.yaml --set size=large
+  inari deploy core/postgres-aws --cluster clu-1 --file values.yaml --set size=large
 
 Without them, an interactive wizard walks the item's OpenAPI v3 schema and
 prompts for each field (required fields first).
@@ -39,9 +39,9 @@ Use --dry-run to evaluate request-time policies without deploying; the
 server's decision, including the reason and remediation when denied, is
 printed.`,
 		Args: cobra.ExactArgs(1),
-		Example: `  inari deploy postgres-aws --cluster clu-1
-  inari deploy postgres-aws --cluster clu-1 --file values.yaml --set replicas=3
-  inari deploy postgres-aws --cluster clu-1 --file values.yaml --dry-run`,
+		Example: `  inari deploy core/postgres-aws --cluster clu-1
+  inari deploy core/postgres-aws --cluster clu-1 --file values.yaml --set replicas=3
+  inari deploy core/postgres-aws --cluster clu-1 --file values.yaml --dry-run`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, cc, err := opts.resolveContext()
 			if err != nil {
@@ -63,15 +63,11 @@ printed.`,
 			if err != nil {
 				return err
 			}
-			itemRsp, err := client.OAS.GetCatalogItemWithResponse(ctx, cc.Tenant, itemID, &oas.GetCatalogItemParams{Cluster: &clusterID})
+			item, err := getCatalogItem(ctx, client, cc.Tenant, itemID, clusterID)
 			if err != nil {
 				return err
 			}
-			if itemRsp.JSON200 == nil {
-				return apiError(itemRsp.Status(), itemRsp.ApplicationproblemJSONDefault)
-			}
-			item := itemRsp.JSON200.Item
-			rawSchema := pickSchema(item, version)
+			rawSchema := pickSchema(*item, version)
 			if rawSchema == nil && version != "" {
 				return fmt.Errorf("version %q not found for item %q (see 'inari catalog describe %s')", version, args[0], args[0])
 			}

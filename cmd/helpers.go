@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"sort"
 	"strings"
 	"text/tabwriter"
 
@@ -34,13 +36,38 @@ func requireTenant(cc config.Context) error {
 	return nil
 }
 
-// resolveCatalogItemID maps a bare catalog item name (as shown by
-// 'inari catalog list') to its fully-qualified ID ("<source>:<name>").
-// Catalog API paths take the ID, but users naturally type the name — an
-// argument that already contains ':' is assumed to be an ID and passed
-// through. Fails when no item matches or the name is ambiguous.
+var catalogIdentitySegment = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
+
+func canonicalCatalogIDParts(id string) (source, name string, ok bool, err error) {
+	if !strings.Contains(id, "/") {
+		return "", "", false, nil
+	}
+	parts := strings.Split(id, "/")
+	if len(parts) != 2 || len(parts[0]) == 0 || len(parts[0]) > 40 || len(parts[1]) == 0 || len(parts[1]) > 63 ||
+		!catalogIdentitySegment.MatchString(parts[0]) || !catalogIdentitySegment.MatchString(parts[1]) {
+		return "", "", false, fmt.Errorf("invalid catalog item ID %q: trusted-source identity must be <source>/<package> with lowercase DNS-style segments", id)
+	}
+	return parts[0], parts[1], true, nil
+}
+
+func internalCatalogItemID(id string) bool {
+	return strings.HasPrefix(id, "component:") || strings.HasPrefix(id, "discovered:")
+}
+
+// resolveCatalogItemID accepts canonical <source>/<package> identity directly.
+// A bare package name is resolved only when it identifies exactly one item;
+// duplicate names require an explicit source. Legacy external colon IDs are
+// rejected, while internal component:/discovered: identities remain valid.
 func resolveCatalogItemID(ctx context.Context, client *api.Client, tenant, cluster, arg string) (string, error) {
+	if internalCatalogItemID(arg) {
+		return arg, nil
+	}
 	if strings.Contains(arg, ":") {
+		return "", fmt.Errorf("legacy catalog item ID %q is not supported; use canonical <source>/<package> identity", arg)
+	}
+	if _, _, canonical, err := canonicalCatalogIDParts(arg); err != nil {
+		return "", err
+	} else if canonical {
 		return arg, nil
 	}
 	params := &oas.ListCatalogParams{}
@@ -62,14 +89,51 @@ func resolveCatalogItemID(ctx context.Context, client *api.Client, tenant, clust
 			}
 		}
 	}
+	sort.Strings(matches)
 	switch len(matches) {
 	case 0:
 		return "", fmt.Errorf("catalog item %q not found (see 'inari catalog list')", arg)
 	case 1:
 		return matches[0], nil
 	default:
-		return "", fmt.Errorf("catalog item name %q is ambiguous across sources (%s); use the full ID", arg, strings.Join(matches, ", "))
+		return "", fmt.Errorf("catalog item name %q is ambiguous across sources (%s); use canonical <source>/<package> identity", arg, strings.Join(matches, ", "))
 	}
+}
+
+func getCatalogItem(ctx context.Context, client *api.Client, tenant, itemID, cluster string) (*oas.ItemView, error) {
+	if internalCatalogItemID(itemID) {
+		params := &oas.GetCatalogItemParams{}
+		if cluster != "" {
+			params.Cluster = &cluster
+		}
+		rsp, err := client.OAS.GetCatalogItemWithResponse(ctx, tenant, itemID, params)
+		if err != nil {
+			return nil, err
+		}
+		if rsp.JSON200 == nil {
+			return nil, apiError(rsp.Status(), rsp.ApplicationproblemJSONDefault)
+		}
+		return &rsp.JSON200.Item, nil
+	}
+	source, name, canonical, err := canonicalCatalogIDParts(itemID)
+	if err != nil {
+		return nil, err
+	}
+	if !canonical {
+		return nil, fmt.Errorf("catalog item ID %q is not source-qualified", itemID)
+	}
+	params := &oas.GetSourceCatalogItemParams{}
+	if cluster != "" {
+		params.Cluster = &cluster
+	}
+	rsp, err := client.OAS.GetSourceCatalogItemWithResponse(ctx, tenant, source, name, params)
+	if err != nil {
+		return nil, err
+	}
+	if rsp.JSON200 == nil {
+		return nil, apiError(rsp.Status(), rsp.ApplicationproblemJSONDefault)
+	}
+	return &rsp.JSON200.Item, nil
 }
 
 func newTable(w interface{ Write([]byte) (int, error) }) *tabwriter.Writer {

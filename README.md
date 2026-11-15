@@ -28,7 +28,8 @@ inari context use prod
 inari context set prod --server https://api.inari.example.com --tenant acme
 
 # Register a cluster and install the agent (manifest embeds a one-time token)
-inari cluster register prod-eu --label env=prod | kubectl apply -f -
+inari cluster register prod-eu --label env=prod
+# Then run the printed Helm command to install inari-agent with its one-time token.
 inari cluster list
 
 # Browse the catalog

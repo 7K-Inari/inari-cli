@@ -71,11 +71,11 @@ ever written to the file.`,
 				return apiError(aiRsp.Status(), aiRsp.ApplicationproblemJSONDefault)
 			}
 			ai := &aiRsp.JSON200.AccessInfo
-			if ai.KubectlAccessEnabled != nil && !*ai.KubectlAccessEnabled {
+			if !ai.KubectlAccessEnabled {
 				return fmt.Errorf("kubectl access is disabled by the control plane (kubectl_access.enabled=false); ask your platform admin to enable it")
 			}
 			mode := oas.GetClusterKubeconfigParamsModeGateway
-			if ai.TunnelAvailable != nil && !*ai.TunnelAvailable {
+			if !ai.TunnelAvailable {
 				reason := ""
 				if ai.TunnelUnavailableReason != nil {
 					reason = " (" + *ai.TunnelUnavailableReason + ")"
