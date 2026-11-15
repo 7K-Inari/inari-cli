@@ -16,6 +16,8 @@ spec:
       automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
+        runAsGroup: 101
+        fsGroup: 101
         seccompProfile: {type: RuntimeDefault}
       containers:
         - name: app
@@ -25,8 +27,6 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
 {{ end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          env:
-            - {name: SCAFFOLD_HTTP, value: "true"}
           ports:
             - {name: http, containerPort: 8080}
           securityContext:
@@ -34,10 +34,18 @@ spec:
             readOnlyRootFilesystem: true
             capabilities: {drop: [ALL]}
           readinessProbe:
-            httpGet: {path: /healthz, port: http}
+            httpGet: {path: /, port: http}
             periodSeconds: 2
             failureThreshold: 15
           livenessProbe:
-            httpGet: {path: /healthz, port: http}
+            httpGet: {path: /, port: http}
             periodSeconds: 10
           resources: {{ .Values.resources | toYaml | nindent 12 }}
+          volumeMounts:
+            - {name: nginx-cache, mountPath: /var/cache/nginx}
+            - {name: nginx-run, mountPath: /var/run}
+            - {name: nginx-tmp, mountPath: /tmp}
+      volumes:
+        - {name: nginx-cache, emptyDir: {}}
+        - {name: nginx-run, emptyDir: {}}
+        - {name: nginx-tmp, emptyDir: {}}
