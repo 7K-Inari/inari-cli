@@ -2,6 +2,9 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,6 +13,8 @@ import (
 
 func TestHirobaInitFullAppOffline(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("INARI_SERVER", "")
+	t.Setenv("INARI_CONFIG_DIR", filepath.Join(dir, "empty-config"))
 	out, errOut := &bytes.Buffer{}, &bytes.Buffer{}
 	root := NewRootCmd("dev", "none", "now", out, errOut)
 	root.SetArgs([]string{"hiroba", "init", "community-app", "--type", "app", "--dir", dir, "--with-plugin", "--with-ui", "--with-chart", "--with-observability", "--with-runtime-smoke"})
@@ -61,6 +66,37 @@ func TestHirobaInitChartlessComponents(t *testing.T) {
 		if _, err := os.Stat(filepath.Join(target, name)); err != nil {
 			t.Errorf("expected %s: %v", name, err)
 		}
+	}
+}
+
+func TestHirobaInitContractWarningDoesNotBlock(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/meta/contracts" {
+			http.NotFound(w, r)
+			return
+		}
+		if r.Header.Get("Authorization") != "" {
+			t.Error("unexpected authorization header")
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"pluginContracts": []string{"inari.plugin.v2"},
+			"uiHostApis":      []string{"inari.ui.v1"},
+			"serverVersion":   "2.0.0",
+		})
+	}))
+	defer server.Close()
+	dir := t.TempDir()
+	errOut := &bytes.Buffer{}
+	root := NewRootCmd("dev", "none", "now", &bytes.Buffer{}, errOut)
+	root.SetArgs([]string{"hiroba", "init", "warning-app", "--dir", dir, "--with-plugin", "--server", server.URL})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("incompatible server blocked scaffold: %v", err)
+	}
+	if !strings.Contains(errOut.String(), "inari.plugin.v1") || !strings.Contains(errOut.String(), "continuing") {
+		t.Fatalf("expected incompatibility warning, got %q", errOut)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "warning-app", "extension.yaml")); err != nil {
+		t.Fatalf("scaffold missing after warning: %v", err)
 	}
 }
 

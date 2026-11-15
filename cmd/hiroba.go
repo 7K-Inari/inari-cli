@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
 
+	"github.com/7K-Inari/inari-cli/internal/config"
 	"github.com/7K-Inari/inari-cli/internal/hiroba"
 )
 
@@ -16,6 +18,24 @@ func newHirobaCmd(opts *GlobalOptions) *cobra.Command {
 	}
 	command.AddCommand(newHirobaInitCmd(opts))
 	return command
+}
+
+func effectiveHirobaServer(opts *GlobalOptions) string {
+	if opts.ServerFlag != "" {
+		return opts.ServerFlag
+	}
+	if server := os.Getenv("INARI_SERVER"); server != "" {
+		return server
+	}
+	cfg, err := config.Load()
+	if err != nil {
+		return ""
+	}
+	_, current, err := cfg.Current()
+	if err != nil {
+		return ""
+	}
+	return current.Server
 }
 
 func newHirobaInitCmd(opts *GlobalOptions) *cobra.Command {
@@ -32,6 +52,9 @@ func newHirobaInitCmd(opts *GlobalOptions) *cobra.Command {
 			target := filepath.Join(dir, options.Name)
 			if err := hiroba.Scaffold(target, options); err != nil {
 				return err
+			}
+			if server := effectiveHirobaServer(opts); server != "" {
+				hiroba.WarnOnContractMismatch(cmd.Context(), server, options, opts.ErrOut)
 			}
 			fmt.Fprintf(opts.Out, "Scaffolded Hiroba %s %q in %s\n", options.Type, options.Name, target)
 			return nil
