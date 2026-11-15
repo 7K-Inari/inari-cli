@@ -158,6 +158,9 @@ func selectedFiles(opts Options) (map[string]fileSpec, error) {
 		if err := addTree(files, "templates/components/chart/"+chartVariant, "charts/"+opts.Name); err != nil {
 			return nil, err
 		}
+		if err := addTree(files, "templates/components/chart/config", "ci"); err != nil {
+			return nil, err
+		}
 	}
 	if opts.WithObservability {
 		if err := addTree(files, "templates/components/observability/canonical", "observability"); err != nil {

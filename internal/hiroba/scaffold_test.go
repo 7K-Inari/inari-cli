@@ -158,6 +158,13 @@ func TestFullMatrixContentContracts(t *testing.T) {
 					t.Errorf("%s mask %d did not select helm adapter", kind, mask)
 				}
 			}
+			if opts.WithChart {
+				for _, path := range []string{"ci/ct.yaml", "ci/chart_schema.yaml", "ci/lintconf.yaml"} {
+					if _, ok := tree[path]; !ok {
+						t.Errorf("%s mask %d omitted chart test config %s", kind, mask, path)
+					}
+				}
+			}
 			if !opts.WithPlugin && kind != "extension" {
 				for path := range tree {
 					if strings.HasPrefix(path, "extension/") {

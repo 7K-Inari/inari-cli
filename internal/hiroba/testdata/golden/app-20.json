@@ -103,6 +103,18 @@
     "mode": 420,
     "content": "replicaCount: 1\nimage:\n  repository: nginxinc/nginx-unprivileged\n  tag: \"1.29.4\"\n  digest: \"sha256:c38007e929d1d368ea26df1b696bfc5655e274db11f755fad63c25950a157423\"\n  pullPolicy: IfNotPresent\nservice:\n  type: ClusterIP\n  port: 8080\nobservability:\n  enabled: false\n  rules:\n    enabled: false\nresources:\n  requests:\n    cpu: 25m\n    memory: 32Mi\n  limits:\n    cpu: 200m\n    memory: 128Mi\n"
   },
+  "ci/chart_schema.yaml": {
+    "mode": 420,
+    "content": "name: str()\nhome: str(required=False)\nversion: str()\napiVersion: str()\nappVersion: any(str(), num(), required=False)\ndescription: str(required=False)\nkeywords: list(str(), required=False)\nsources: list(str(), required=False)\nmaintainers: list(include('maintainer'), required=False)\ndependencies: list(include('dependency'), required=False)\nicon: str(required=False)\nengine: str(required=False)\ncondition: str(required=False)\ntags: str(required=False)\ndeprecated: bool(required=False)\nkubeVersion: str(required=False)\nannotations: map(str(), str(), required=False)\ntype: str(required=False)\n---\nmaintainer:\n  name: str()\n  email: str(required=False)\n  url: str(required=False)\n---\ndependency:\n  name: str()\n  version: str()\n  repository: str(required=False)\n  condition: str(required=False)\n  tags: list(str(), required=False)\n  enabled: bool(required=False)\n  import-values: list(any(str(), include('import-value')), required=False)\n  alias: str(required=False)\n---\nimport-value:\n  child: str()\n  parent: str()\n"
+  },
+  "ci/ct.yaml": {
+    "mode": 420,
+    "content": "chart-dirs:\n  - charts\nvalidate-maintainers: false\ncheck-version-increment: false\n"
+  },
+  "ci/lintconf.yaml": {
+    "mode": 420,
+    "content": "---\nrules:\n  braces:\n    min-spaces-inside: 0\n    max-spaces-inside: 0\n    min-spaces-inside-empty: -1\n    max-spaces-inside-empty: -1\n  brackets:\n    min-spaces-inside: 0\n    max-spaces-inside: 0\n    min-spaces-inside-empty: -1\n    max-spaces-inside-empty: -1\n  colons:\n    max-spaces-before: 0\n    max-spaces-after: 1\n  commas:\n    max-spaces-before: 0\n    min-spaces-after: 1\n    max-spaces-after: 1\n  comments:\n    require-starting-space: true\n    min-spaces-from-content: 2\n  document-end: disable\n  document-start: disable\n  empty-lines:\n    max: 2\n    max-start: 0\n    max-end: 0\n  hyphens:\n    max-spaces-after: 1\n  indentation:\n    spaces: consistent\n    indent-sequences: whatever\n    check-multi-line-strings: false\n  key-duplicates: enable\n  line-length: disable\n  new-line-at-end-of-file: enable\n  new-lines:\n    type: unix\n  trailing-spaces: enable\n  truthy:\n    level: warning\n"
+  },
   "packages/matrix-app/README.md": {
     "mode": 420,
     "content": "# app package\n\nPlatform-app fixture for the first-party OCI chart. Values are schema-validated and chart-native observability is disabled for companion-managed deployments.\n"
