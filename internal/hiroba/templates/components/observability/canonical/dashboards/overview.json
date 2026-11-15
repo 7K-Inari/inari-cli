@@ -1,0 +1,34 @@
+{
+  "title": "Workflows scaffold overview",
+  "uid": "__HIROBA_NAME__-overview",
+  "schemaVersion": 40,
+  "templating": {
+    "list": [
+      {
+        "name": "namespace",
+        "type": "textbox",
+        "value": "default"
+      },
+      {
+        "name": "DS_PROMETHEUS",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {"text": "Prometheus", "value": "prometheus"}
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Synthetic availability",
+      "description": "Current value of the synthetic __HIROBA_NAME__ availability gauge.",
+      "fieldConfig": {"defaults": {"unit": "short"}},
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "targets": [
+        {"refId": "A", "expr": "workflows_scaffold_up"}
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+    }
+  ]
+}

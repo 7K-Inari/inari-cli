@@ -1,0 +1,5 @@
+name: __HIROBA_NAME__
+version: 0.1.0
+channel: incubating
+description: Minimal component scaffold for __HIROBA_NAME__
+kind: component

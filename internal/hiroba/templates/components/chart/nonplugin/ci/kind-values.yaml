@@ -1,0 +1,4 @@
+observability:
+  enabled: __HIROBA_OBSERVABILITY_ENABLED__
+  rules:
+    enabled: __HIROBA_OBSERVABILITY_ENABLED__

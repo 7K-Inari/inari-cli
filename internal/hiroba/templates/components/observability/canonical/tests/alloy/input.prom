@@ -1,0 +1,3 @@
+# HELP workflows_scaffold_up Synthetic availability gauge.
+# TYPE workflows_scaffold_up gauge
+workflows_scaffold_up{job="__HIROBA_NAME__",instance="ci"} 1

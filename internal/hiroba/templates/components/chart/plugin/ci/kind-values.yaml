@@ -1,0 +1,9 @@
+image:
+  repository: __HIROBA_NAME__
+  tag: ci
+  digest: ""
+  pullPolicy: Never
+observability:
+  enabled: __HIROBA_OBSERVABILITY_ENABLED__
+  rules:
+    enabled: __HIROBA_OBSERVABILITY_ENABLED__

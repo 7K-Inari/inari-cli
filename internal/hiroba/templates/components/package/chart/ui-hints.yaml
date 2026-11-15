@@ -1,0 +1,4 @@
+fields:
+  replicaCount:
+    title: Replicas
+    description: Number of synthetic extension replicas

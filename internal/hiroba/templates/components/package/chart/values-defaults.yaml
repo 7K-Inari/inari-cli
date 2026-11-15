@@ -1,0 +1,5 @@
+replicaCount: 1
+observability:
+  enabled: false
+  rules:
+    enabled: false

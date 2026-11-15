@@ -1,0 +1,26 @@
+suiteSchema: inari.smoke.v1
+target:
+  id: __HIROBA_NAME__-smoke
+  version: 0.1.0
+  adapter:
+    kind: manifests
+    path: fixtures/app
+    fixtureOnly: true
+    readiness:
+      - {kind: Deployment, name: __HIROBA_NAME__-fixture, namespace: default, condition: Available}
+executableProfiles: [ci]
+compatibleAppVersions: ">=0.1.0 <2.0.0"
+parameterContract: inari.smoke.params.v1
+dependencies: []
+timeout: 5m
+profiles:
+  ci: {sideEffects: readOnly, cleanup: required}
+  stage: {sideEffects: readOnly, cleanup: required}
+  prod: {sideEffects: readOnly, cleanup: required}
+rbacRequirements:
+  - verbs: [get, list]
+    resources: [pods, services]
+workflowTemplate: workflowtemplate.yaml
+entrypoint: smoke
+idempotency: safe
+cleanup: no resources are created by the read-only journey

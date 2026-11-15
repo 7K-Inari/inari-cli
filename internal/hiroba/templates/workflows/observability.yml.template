@@ -1,0 +1,7 @@
+name: observability
+on: {pull_request: {branches: [main]}}
+permissions: {contents: read}
+jobs:
+  test:
+    uses: 7K-Hiroba/workflows/.github/workflows/test-observability.yml@__WORKFLOWS_V1_SHA__ # __WORKFLOWS_VERSION__
+    with: {root: .}

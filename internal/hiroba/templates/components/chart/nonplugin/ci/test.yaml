@@ -1,0 +1,5 @@
+schema: inari.chart-test.v1
+__HIROBA_CHART_DEPENDENCIES__install:
+  timeout: 5m
+  values:
+    - charts/__HIROBA_NAME__/ci/kind-values.yaml

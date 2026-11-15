@@ -36,6 +36,7 @@ Core flows:
   resources   Inspect resource instances across clusters with health/status
   git         Connect your personal git provider account (GitHub social login)
   extension   Scaffold a backend or UI extension
+  hiroba      Scaffold Hiroba community application repositories
 
 Configuration lives in ~/.config/inari/ with kubectl-style contexts
 (per-context control-plane server and tenant).`,
@@ -69,6 +70,7 @@ Configuration lives in ~/.config/inari/ with kubectl-style contexts
 	root.AddCommand(newResourcesCmd(opts))
 	root.AddCommand(newGitCmd(opts))
 	root.AddCommand(newExtensionCmd(opts))
+	root.AddCommand(newHirobaCmd(opts))
 
 	return root
 }

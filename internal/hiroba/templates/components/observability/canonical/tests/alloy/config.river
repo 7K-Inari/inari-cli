@@ -1,0 +1,27 @@
+// Real Alloy pipeline fixture. The integration runner replaces only the two
+// endpoint placeholders with ephemeral CI container addresses.
+prometheus.scrape "workflows_scaffold" {
+	targets         = [{"__address__" = "__TARGET__", "job" = "__HIROBA_NAME__"}]
+	scrape_interval = "1s"
+	honor_labels    = true
+	forward_to      = [prometheus.relabel.central.receiver]
+}
+
+prometheus.relabel "central" {
+	rule {
+		target_label = "org"
+		replacement  = "ci"
+	}
+
+	rule {
+		target_label = "cluster"
+		replacement  = "kind-ci"
+	}
+	forward_to = [prometheus.remote_write.central.receiver]
+}
+
+prometheus.remote_write "central" {
+	endpoint {
+		url = "__REMOTE_WRITE_URL__"
+	}
+}

@@ -1,0 +1,11 @@
+apiVersion: kro.run/v1alpha1
+kind: ObservabilityPack
+metadata:
+  name: scaffold
+  namespace: default
+spec:
+  org: ci
+  namespace: default
+  team: platform-security
+  datasource: prometheus
+  render: all

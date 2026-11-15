@@ -1,0 +1,8 @@
+image:
+  repository: __HIROBA_NAME__
+  tag: ci
+  pullPolicy: Never
+observability:
+  enabled: false
+  rules:
+    enabled: false
