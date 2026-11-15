@@ -29,7 +29,7 @@ func fetchContracts(ctx context.Context, server string) (ContractSet, error) {
 	if err != nil {
 		return ContractSet{}, err
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode != http.StatusOK {
 		return ContractSet{}, fmt.Errorf("meta/contracts returned %s", response.Status)
 	}
