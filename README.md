@@ -54,6 +54,21 @@ Extension scaffolds include `extension.yaml` contract declarations (`inari.plugi
 
 Every command supports `-o table|json|yaml` and a genuinely helpful `--help`.
 
+## Hiroba community scaffolding
+
+```sh
+inari hiroba init my-service
+inari hiroba init my-service --type app --with-plugin --with-ui --with-chart --with-observability --with-runtime-smoke
+inari hiroba init my-catalog --type catalog --with-observability
+inari hiroba init my-template --type template --with-runtime-smoke
+```
+
+`--type` selects `app`, `extension`, `catalog`, or `template`; `--dir` chooses the parent and `--module` overrides the Go module. Every boolean component combination is supported. Observability always includes canonical assets and the companion pack, with chart-native output only when `--with-chart` is selected. Runtime smoke uses the actual chart through its generic image declaration or, without a chart, a meaningful CI-only fixture under `tests/smoke` without adding an application component.
+
+Generated workflow callers use full signed-release commit SHAs and version comments, never mutable branches or major-version tags. Package examples use canonical `<source>/<package>` identities. Fixture-only suites are machine-marked as CI-only and ineligible for reviewed/official application evidence or real stage/prod verification.
+
+When a backend or UI component is generated and a server is configured, `inari hiroba init` makes a bounded, unauthenticated `GET /api/v1/meta/contracts` request. Incompatible or unavailable contracts produce warnings only; offline generation and no-server behavior remain nonblocking.
+
 ## Configuration
 
 - `~/.config/inari/config.yaml` — kubectl-style contexts (`server`, `issuer`, `tenant`).
