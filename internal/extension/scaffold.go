@@ -19,7 +19,10 @@ type Params struct {
 	Kind   string // backend | ui
 	Module string
 	// Pascal is Name converted to PascalCase for source identifiers.
-	Pascal string
+	Pascal          string
+	BackendContract string
+	UIHostAPI       string
+	UISDKRange      string
 }
 
 // Scaffold renders the template tree for kind into destDir.

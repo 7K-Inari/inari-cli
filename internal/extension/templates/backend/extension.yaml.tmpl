@@ -1,0 +1,15 @@
+apiVersion: inari.io/v1alpha1
+kind: Extension
+metadata:
+  name: {{.Name}}
+spec:
+  version: 0.1.0
+  kinds: [backend]
+  backend:
+    image: ghcr.io/7k-inari/{{.Name}}
+    digestPinning: required
+    actions: []
+  contracts:
+    backend: [{{.BackendContract}}]
+  permissions:
+    - extensions:invoke:{{.Name}}
