@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/7K-Inari/inari-api/gen/go/oas"
 	"github.com/7K-Inari/inari-cli/internal/api"
@@ -208,15 +207,4 @@ func printPlan(opts *GlobalOptions, plan *oas.Plan) error {
 		}
 	}
 	return nil
-}
-
-func planSourceDescription(plan *oas.Plan) string {
-	if plan.Capability == nil {
-		return "no signed observability metadata"
-	}
-	parts := []string{fmt.Sprintf("%d dashboards", len(*plan.Capability.Dashboards))}
-	if plan.Capability.LinkVariables != nil {
-		parts = append(parts, "linkVariables="+strings.Join(*plan.Capability.LinkVariables, ","))
-	}
-	return strings.Join(parts, ", ")
 }
