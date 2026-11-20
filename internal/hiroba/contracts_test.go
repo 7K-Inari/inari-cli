@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -13,7 +14,12 @@ import (
 
 func contractServer(t *testing.T, handler http.HandlerFunc) *httptest.Server {
 	t.Helper()
-	server := httptest.NewServer(handler)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if w.Header().Get("Content-Type") == "" {
+			w.Header().Set("Content-Type", "application/json")
+		}
+		handler(w, r)
+	}))
 	t.Cleanup(server.Close)
 	return server
 }
@@ -29,6 +35,20 @@ func validContractHandler(t *testing.T) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(ContractSet{PluginContracts: []string{"inari.plugin.v1"}, UIHostAPIs: []string{"inari.ui.v1"}, ServerVersion: "1.0.0"})
+	}
+}
+
+func TestContractUsesGeneratedMetaClient(t *testing.T) {
+	data, err := os.ReadFile("contracts.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	if !strings.Contains(text, "GetMetaContractsWithResponse") {
+		t.Fatal("meta contract check must use the generated inari-api client")
+	}
+	if strings.Contains(text, "http.NewRequest") || strings.Contains(text, "/api/v1/meta/contracts\"") {
+		t.Fatal("hand-rolled meta endpoint transport remains")
 	}
 }
 

@@ -2,13 +2,13 @@ package hiroba
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/7K-Inari/inari-api/gen/go/oas"
 )
 
 type ContractSet struct {
@@ -20,23 +20,28 @@ type ContractSet struct {
 func fetchContracts(ctx context.Context, server string) (ContractSet, error) {
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(server, "/")+"/api/v1/meta/contracts", nil)
+	client, err := oas.NewClientWithResponses(server)
 	if err != nil {
 		return ContractSet{}, err
 	}
-	request.Header.Set("Accept", "application/json")
-	response, err := (&http.Client{Timeout: 2 * time.Second}).Do(request)
+	response, err := client.GetMetaContractsWithResponse(ctx)
 	if err != nil {
 		return ContractSet{}, err
 	}
-	defer func() { _ = response.Body.Close() }()
-	if response.StatusCode != http.StatusOK {
-		return ContractSet{}, fmt.Errorf("meta/contracts returned %s", response.Status)
+	if response.JSON200 == nil {
+		status := "unknown response"
+		if response.HTTPResponse != nil {
+			status = response.HTTPResponse.Status
+		}
+		return ContractSet{}, fmt.Errorf("meta/contracts returned %s", status)
 	}
-	var contracts ContractSet
-	decoder := json.NewDecoder(io.LimitReader(response.Body, 1<<20))
-	if err := decoder.Decode(&contracts); err != nil {
-		return ContractSet{}, err
+	metadata := response.JSON200
+	contracts := ContractSet{ServerVersion: metadata.ServerVersion}
+	if metadata.PluginContracts != nil {
+		contracts.PluginContracts = *metadata.PluginContracts
+	}
+	if metadata.UiHostApis != nil {
+		contracts.UIHostAPIs = *metadata.UiHostApis
 	}
 	if err := validateContracts(contracts); err != nil {
 		return ContractSet{}, err

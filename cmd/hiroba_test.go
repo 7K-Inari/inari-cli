@@ -78,6 +78,7 @@ func TestHirobaInitContractWarningDoesNotBlock(t *testing.T) {
 		if r.Header.Get("Authorization") != "" {
 			t.Error("unexpected authorization header")
 		}
+		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"pluginContracts": []string{"inari.plugin.v2"},
 			"uiHostApis":      []string{"inari.ui.v1"},
