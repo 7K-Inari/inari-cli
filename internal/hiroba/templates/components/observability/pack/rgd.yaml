@@ -3,6 +3,8 @@ apiVersion: kro.run/v1alpha1
 kind: ResourceGraphDefinition
 metadata:
   name: __HIROBA_NAME__-observability
+  annotations:
+    inari.dev/observability-render-contract: inari.observability-pack/v2
 spec:
   schema:
     apiVersion: v1alpha1
@@ -89,4 +91,5 @@ spec:
             annotations:
               summary: Synthetic __HIROBA_NAME__ target is down
     includeWhen:
-    - ${schema.spec.render == "all" || schema.spec.render == "rules-central"}
+    - ${(schema.spec.render == "all" || schema.spec.render == "rules-central") &&
+      schema.spec.rulesCentral}

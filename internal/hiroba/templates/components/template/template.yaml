@@ -3,3 +3,4 @@ version: 0.1.0
 channel: incubating
 description: Minimal component scaffold for __HIROBA_NAME__
 kind: component
+__HIROBA_TEMPLATE_OBSERVABILITY__

@@ -169,6 +169,12 @@ func selectedFiles(opts Options) (map[string]fileSpec, error) {
 		if err := addTree(files, "templates/components/observability/pack", "packages/observability-pack"); err != nil {
 			return nil, err
 		}
+		if opts.Type == "app" || opts.Type == "catalog" {
+			addFile(files, "templates/components/observability/manifest/observability.yaml", "packages/"+opts.Name+"/observability.yaml")
+		}
+		if opts.Type == "app" || opts.Type == "template" {
+			addFile(files, "templates/components/observability/manifest/observability.yaml", "templates/"+opts.Name+"/observability/observability.yaml")
+		}
 		if opts.WithChart {
 			if err := addTree(files, "templates/components/observability/chart", "charts/"+opts.Name); err != nil {
 				return nil, err
@@ -274,6 +280,10 @@ func dynamicReplacements(opts Options) map[string]string {
 	if opts.WithObservability {
 		chartDependencies = "dependencies:\n  - packages/observability-pack/tests/deps/prometheusrule-crd.yaml\n"
 	}
+	templateObservability := ""
+	if opts.WithObservability {
+		templateObservability = "observability:\n  manifest: observability/observability.yaml\n"
+	}
 	extensionJobs := ""
 	if effectivePlugin {
 		extensionJobs += "  go:\n    uses: 7K-Hiroba/workflows/.github/workflows/ci-go-extension.yml@__WORKFLOWS_V1_SHA__ # __WORKFLOWS_VERSION__\n    with: {root: .}\n"
@@ -282,14 +292,15 @@ func dynamicReplacements(opts Options) map[string]string {
 		extensionJobs += "  ui:\n    uses: 7K-Hiroba/workflows/.github/workflows/ci-ui-extension.yml@__WORKFLOWS_V1_SHA__ # __WORKFLOWS_VERSION__\n    with: {root: .}\n"
 	}
 	return map[string]string{
-		"__HIROBA_COMPONENTS__":            components,
-		"__HIROBA_OBSERVABILITY__":         observability,
-		"__HIROBA_SMOKE__":                 smoke,
-		"__HIROBA_COMPATIBILITY__":         compatibility,
-		"__HIROBA_EXTENSION_KINDS__":       kinds,
-		"__HIROBA_CHART_DEPENDENCIES__":    chartDependencies,
-		"__HIROBA_OBSERVABILITY_ENABLED__": fmt.Sprintf("%t", opts.WithObservability),
-		"__HIROBA_EXTENSION_JOBS__":        extensionJobs,
+		"__HIROBA_COMPONENTS__":             components,
+		"__HIROBA_OBSERVABILITY__":          observability,
+		"__HIROBA_SMOKE__":                  smoke,
+		"__HIROBA_COMPATIBILITY__":          compatibility,
+		"__HIROBA_EXTENSION_KINDS__":        kinds,
+		"__HIROBA_CHART_DEPENDENCIES__":     chartDependencies,
+		"__HIROBA_OBSERVABILITY_ENABLED__":  fmt.Sprintf("%t", opts.WithObservability),
+		"__HIROBA_TEMPLATE_OBSERVABILITY__": templateObservability,
+		"__HIROBA_EXTENSION_JOBS__":         extensionJobs,
 	}
 }
 

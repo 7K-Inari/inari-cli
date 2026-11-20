@@ -131,6 +131,22 @@ func TestFullMatrixContentContracts(t *testing.T) {
 					t.Errorf("%s mask %d %s contains a mutable workflow ref", kind, mask, path)
 				}
 			}
+			if opts.WithObservability {
+				if kind == "app" || kind == "catalog" {
+					if _, ok := tree["packages/matrix-app/observability.yaml"]; !ok {
+						t.Errorf("%s mask %d omitted full package observability metadata", kind, mask)
+					}
+				}
+				if kind == "app" || kind == "template" {
+					if _, ok := tree["templates/matrix-app/observability/observability.yaml"]; !ok {
+						t.Errorf("%s mask %d omitted template observability metadata", kind, mask)
+					}
+					manifest := tree["templates/matrix-app/template.yaml"].Content
+					if !strings.Contains(manifest, "manifest: observability/observability.yaml") {
+						t.Errorf("%s mask %d omitted template observability declaration", kind, mask)
+					}
+				}
+			}
 			if opts.WithObservability && !opts.WithChart {
 				if _, ok := tree["packages/observability-pack/rgd.yaml"]; !ok {
 					t.Errorf("%s mask %d omitted chartless observability pack", kind, mask)

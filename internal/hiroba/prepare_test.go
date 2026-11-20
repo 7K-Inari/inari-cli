@@ -39,6 +39,9 @@ func TestPrepareCanonicalMatrix(t *testing.T) {
 					t.Fatalf("%s mask %d observability render: %v\n%s", kind, mask, err, output)
 				}
 				canonicalOutputs := []string{"packages/observability-pack/rgd.yaml"}
+				if opts.Type == "app" || opts.Type == "catalog" {
+					canonicalOutputs = append(canonicalOutputs, "packages/matrix-app/observability.yaml")
+				}
 				if opts.WithChart {
 					canonicalOutputs = append(canonicalOutputs,
 						"charts/matrix-app/templates/observability/dashboards.yaml",
@@ -54,9 +57,12 @@ func TestPrepareCanonicalMatrix(t *testing.T) {
 					text := strings.ReplaceAll(string(data), opts.Name, "__HIROBA_NAME__")
 					text = strings.ReplaceAll(text, pascalName(opts.Name), "__HIROBA_NAME_PASCAL__")
 					var templatePath string
-					if outputPath == "packages/observability-pack/rgd.yaml" {
+					switch outputPath {
+					case "packages/observability-pack/rgd.yaml":
 						templatePath = "templates/components/observability/pack/rgd.yaml"
-					} else {
+					case "packages/matrix-app/observability.yaml":
+						templatePath = "templates/components/observability/manifest/observability.yaml"
+					default:
 						templatePath = "templates/components/observability/chart/" + strings.TrimPrefix(outputPath, "charts/matrix-app/")
 					}
 					if err := os.WriteFile(templatePath, []byte(text), 0o644); err != nil {
