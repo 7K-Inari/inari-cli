@@ -9,7 +9,7 @@
   },
   ".github/workflows/edge.yml": {
     "mode": 420,
-    "content": "name: edge\non: {push: {branches: [main]}}\npermissions: {contents: read}\nconcurrency: {group: \"hiroba-release-${{ github.repository }}\", cancel-in-progress: false}\njobs:\n  edge:\n    uses: 7K-Hiroba/workflows/.github/workflows/edge.yml@ae4be82b95cee92eecd8d87ba55204dea750c7e1 # v1.1.0\n    with: {root: .}\n    permissions: {contents: write, packages: write, id-token: write, attestations: write, actions: read}\n"
+    "content": "name: edge\non: {push: {branches: [main]}}\npermissions: {contents: read}\nconcurrency: {group: \"hiroba-release-${{ github.repository }}\", cancel-in-progress: false}\njobs:\n  edge:\n    uses: 7K-Hiroba/workflows/.github/workflows/edge.yml@ae4be82b95cee92eecd8d87ba55204dea750c7e1 # v1.1.0\n    with: {root: .}\n    permissions: {contents: write, packages: write, id-token: write, attestations: write, actions: read, artifact-metadata: write}\n"
   },
   ".github/workflows/extension-ci.yml": {
     "mode": 420,
@@ -21,7 +21,7 @@
   },
   ".github/workflows/release.yml": {
     "mode": 420,
-    "content": "name: release\non:\n  push: {branches: [main]}\n  workflow_dispatch:\n    inputs: {repair_tag: {required: false, type: string}}\npermissions: {contents: read}\nconcurrency: {group: \"hiroba-release-${{ github.repository }}\", cancel-in-progress: false}\njobs:\n  release:\n    uses: 7K-Hiroba/workflows/.github/workflows/release.yml@ae4be82b95cee92eecd8d87ba55204dea750c7e1 # v1.1.0\n    with: {root: ., repair_tag: \"${{ inputs.repair_tag }}\", app-id: \"${{ vars.HIROBA_RELEASE_APP_ID }}\"}\n    secrets:\n      release-private-key: \"${{ secrets.HIROBA_RELEASE_PRIVATE_KEY }}\"\n    permissions: {contents: write, packages: write, id-token: write, attestations: write, actions: read}\n"
+    "content": "name: release\non:\n  push: {branches: [main]}\n  workflow_dispatch:\n    inputs: {repair_tag: {required: false, type: string}}\npermissions: {contents: read}\nconcurrency: {group: \"hiroba-release-${{ github.repository }}\", cancel-in-progress: false}\njobs:\n  release:\n    uses: 7K-Hiroba/workflows/.github/workflows/release.yml@ae4be82b95cee92eecd8d87ba55204dea750c7e1 # v1.1.0\n    with: {root: ., repair_tag: \"${{ inputs.repair_tag }}\", app-id: \"${{ vars.HIROBA_RELEASE_APP_ID }}\"}\n    secrets:\n      release-private-key: \"${{ secrets.HIROBA_RELEASE_PRIVATE_KEY }}\"\n    permissions: {contents: write, packages: write, id-token: write, attestations: write, actions: read, artifact-metadata: write}\n"
   },
   ".github/workflows/test-packages.yml": {
     "mode": 420,

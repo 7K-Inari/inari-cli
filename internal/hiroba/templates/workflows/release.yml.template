@@ -11,4 +11,4 @@ jobs:
     with: {root: ., repair_tag: "${{ inputs.repair_tag }}", app-id: "${{ vars.HIROBA_RELEASE_APP_ID }}"}
     secrets:
       release-private-key: "${{ secrets.HIROBA_RELEASE_PRIVATE_KEY }}"
-    permissions: {contents: write, packages: write, id-token: write, attestations: write, actions: read}
+    permissions: {contents: write, packages: write, id-token: write, attestations: write, actions: read, artifact-metadata: write}

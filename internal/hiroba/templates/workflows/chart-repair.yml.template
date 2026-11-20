@@ -34,4 +34,4 @@ jobs:
       source-sha: "${{ needs.resolve.outputs.source-sha }}"
       repair: true
       standalone: true
-    permissions: {contents: read, packages: write, id-token: write, attestations: write, actions: read}
+    permissions: {contents: read, packages: write, id-token: write, attestations: write, actions: read, artifact-metadata: write}
