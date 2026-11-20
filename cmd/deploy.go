@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/7K-Inari/inari-api/gen/go/oas"
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
 	"github.com/7K-Inari/inari-cli/internal/prompt"
@@ -13,15 +14,16 @@ import (
 
 func newDeployCmd(opts *GlobalOptions) *cobra.Command {
 	var (
-		clusterID string
-		version   string
-		channel   string
-		name      string
-		namespace string
-		ownerTeam string
-		file      string
-		sets      []string
-		dryRun    bool
+		clusterID     string
+		version       string
+		channel       string
+		name          string
+		namespace     string
+		ownerTeam     string
+		file          string
+		sets          []string
+		dryRun        bool
+		observability deploymentPlanFlags
 	)
 	c := &cobra.Command{
 		Use:   "deploy ITEM",
@@ -123,45 +125,44 @@ printed.`,
 				return printDecision(opts, rsp.JSON200.Decision)
 			}
 
-			deployBody := oas.DeployCatalogItemJSONRequestBody{
-				ClusterId: clusterID,
-				ItemId:    itemID,
-				Spec:      spec,
+			if version == "" && channel != "" && item.Versions != nil {
+				for _, candidate := range *item.Versions {
+					if candidate.Channel == channel {
+						version = candidate.Version
+						break
+					}
+				}
+				if version == "" {
+					return fmt.Errorf("channel %q has no selectable version for %q", channel, itemID)
+				}
 			}
+			source := oas.Source{Kind: "catalog", ItemId: &itemID}
 			if version != "" {
-				deployBody.Version = &version
+				source.Version = &version
 			}
-			if channel != "" {
-				deployBody.Channel = &channel
+			idempotencyKey := uuid.NewString()
+			request := oas.PlanRequest{
+				Operation: "deploy", Source: &source, IdempotencyKey: idempotencyKey,
+				Deployment: oas.DeploymentInput{TargetId: clusterID, Spec: spec},
 			}
 			if name != "" {
-				deployBody.Name = &name
+				request.Deployment.Name = &name
 			}
 			if namespace != "" {
-				deployBody.Namespace = &namespace
+				request.Deployment.Namespace = &namespace
 			}
 			if ownerTeam != "" {
-				deployBody.OwnerTeam = &ownerTeam
+				request.Deployment.OwnerTeam = &ownerTeam
 			}
-			rsp, err := client.OAS.DeployCatalogItemWithResponse(ctx, cc.Tenant, deployBody)
+			preflight, err := completePlanPreflight(ctx, client, cc.Tenant, request, observability)
 			if err != nil {
 				return err
 			}
-			if rsp.JSON200 == nil {
-				return apiError(rsp.Status(), rsp.ApplicationproblemJSONDefault)
+			plan, err := submitPlan(ctx, client, cc.Tenant, preflight, idempotencyKey)
+			if err != nil {
+				return err
 			}
-			d := rsp.JSON200.Deploy
-			fmt.Fprintf(opts.Out, "Deploy accepted: instance %s (status %s, version %s)\n", d.InstanceID, d.Status, d.Version)
-			if d.CommitSHA != "" {
-				fmt.Fprintf(opts.Out, "Commit: %s\n", d.CommitSHA)
-			}
-			if d.PRURL != "" {
-				fmt.Fprintf(opts.Out, "Pull request: %s\n", d.PRURL)
-			}
-			if d.ApprovalID != "" {
-				fmt.Fprintf(opts.Out, "Approval required: %s\n", d.ApprovalID)
-			}
-			return nil
+			return printPlan(opts, plan)
 		},
 	}
 	c.Flags().StringVar(&clusterID, "cluster", "", "Target cluster ID (required)")
@@ -173,6 +174,8 @@ printed.`,
 	c.Flags().StringVarP(&file, "file", "f", "", "YAML values file (non-interactive)")
 	c.Flags().StringArrayVar(&sets, "set", nil, "Set a value key=value, dot paths supported (repeatable)")
 	c.Flags().BoolVar(&dryRun, "dry-run", false, "Evaluate request-time policies without deploying")
+	addDeploymentPlanFlags(c, &observability)
+	c.AddCommand(newDeployChartCmd(opts), newDeployTemplateCmd(opts))
 	return c
 }
 

@@ -38,7 +38,31 @@ func deployFakeServer(t *testing.T, onDeploy func(body map[string]any)) *httptes
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{"item": item})
 	})
-	mux.HandleFunc("/api/v1/tenants/acme/deploys", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v1/tenants/acme/deployment-plans/preflight", func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		source := body["source"].(map[string]any)
+		deployment := body["deployment"].(map[string]any)
+		version := source["version"]
+		if version == nil {
+			version = "1.2.0"
+		}
+		plan := map[string]any{
+			"id": "dp-1", "orgId": "acme", "orgSlug": "acme", "operation": "deploy", "source": source, "deployment": deployment,
+			"app":           map[string]any{"itemId": source["itemId"], "version": version, "digest": "sha256:abc"},
+			"observability": map[string]any{"mode": "none"}, "planFingerprint": "sha256:plan", "state": "preflight",
+			"gate":      map[string]any{"companionRendering": false, "deployedVerification": false},
+			"createdAt": "2026-11-15T21:42:00Z", "updatedAt": "2026-11-15T21:42:00Z",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"preflight": map[string]any{
+				"plan": plan, "schema": item["versions"].([]map[string]any)[0]["schema"], "compatiblePacks": []any{}, "monitoringTargets": []any{}, "providers": []any{},
+				"deploymentTargets": []map[string]any{{"id": "rt-clu-1", "orgId": "acme", "name": "test", "resourceRef": map[string]any{"kind": "cluster", "id": "clu-1"}, "capabilities": []string{"deployment.cluster"}, "config": map[string]any{}, "enabled": true, "isDefault": false, "revision": 1, "binding": map[string]any{}, "readiness": map[string]any{"state": "ready"}, "createdAt": "2026-11-15T21:42:00Z", "updatedAt": "2026-11-15T21:42:00Z"}},
+			},
+		})
+	})
+	mux.HandleFunc("/api/v1/tenants/acme/deployment-plans", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			t.Errorf("decode deploy body: %v", err)
@@ -48,9 +72,12 @@ func deployFakeServer(t *testing.T, onDeploy func(body map[string]any)) *httptes
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"deploy": map[string]any{
-				"InstanceID": "inst-1", "Status": "Provisioning", "Version": "1.2.0",
-				"CommitSHA": "abc123", "PRURL": "https://git.example/pr/7", "ApprovalID": "",
+			"plan": map[string]any{
+				"id": "dp-1", "orgId": "acme", "orgSlug": "acme", "operation": "deploy", "source": body["source"], "deployment": body["deployment"],
+				"app":           map[string]any{"itemId": "core/postgres-aws", "version": "1.2.0", "digest": "sha256:abc"},
+				"observability": map[string]any{"mode": "none"}, "planFingerprint": "sha256:plan", "state": "submitted",
+				"gate": map[string]any{"companionRendering": false, "deployedVerification": false}, "appInstanceId": "inst-1",
+				"commitSha": "abc123", "prUrl": "https://git.example/pr/7", "createdAt": "2026-11-15T21:42:00Z", "updatedAt": "2026-11-15T21:42:00Z",
 			},
 		})
 	})
@@ -83,10 +110,12 @@ func TestDeployNonInteractiveWithFileAndSet(t *testing.T) {
 	if !strings.Contains(out.String(), "inst-1") || !strings.Contains(out.String(), "https://git.example/pr/7") {
 		t.Errorf("deploy output = %q", out.String())
 	}
-	if gotBody["clusterId"] != "clu-1" || gotBody["itemId"] != "core/postgres-aws" {
+	source := gotBody["source"].(map[string]any)
+	deployment := gotBody["deployment"].(map[string]any)
+	if deployment["targetId"] != "rt-clu-1" || source["itemId"] != "core/postgres-aws" {
 		t.Fatalf("deploy body = %v", gotBody)
 	}
-	spec, ok := gotBody["spec"].(map[string]any)
+	spec, ok := deployment["spec"].(map[string]any)
 	if !ok {
 		t.Fatalf("spec missing in %v", gotBody)
 	}

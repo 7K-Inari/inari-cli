@@ -3,8 +3,9 @@ module github.com/7K-Inari/inari-cli
 go 1.26.3
 
 require (
-	github.com/7K-Inari/inari-api v0.8.0-b5e7e0b
+	github.com/7K-Inari/inari-api v0.8.0-b5e7e0b.0.20261120215744-dc6ef4d8c298
 	github.com/AlecAivazis/survey/v2 v2.3.7
+	github.com/google/uuid v1.6.0
 	github.com/spf13/cobra v1.10.2
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/client-go v0.37.2
@@ -17,7 +18,6 @@ require (
 	github.com/getkin/kin-openapi v0.152.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-openapi/jsonpointer v1.0.0 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
