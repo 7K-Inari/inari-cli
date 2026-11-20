@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/7K-Inari/inari-cli/internal/api"
 	"github.com/7K-Inari/inari-cli/internal/extension"
 )
 
@@ -53,12 +54,13 @@ func newExtensionInitCmd(opts *GlobalOptions) *cobra.Command {
 				return fmt.Errorf("directory %s already exists", target)
 			}
 			if err := extension.Scaffold(target, extension.Params{
-				Name:   name,
-				Kind:   kind,
-				Module: module,
-				Pascal: pascalCase(name),
+				Name: name, Kind: kind, Module: module, Pascal: pascalCase(name),
+				BackendContract: extension.BackendContract, UIHostAPI: extension.UIHostAPI, UISDKRange: extension.UISDKRange,
 			}); err != nil {
 				return err
+			}
+			if warning := extensionContractWarning(cmd, opts, kind); warning != "" {
+				fmt.Fprintf(opts.ErrOut, "Warning: %s\n", warning)
 			}
 			fmt.Fprintf(opts.Out, "Scaffolded %s extension %q in %s\n", kind, name, target)
 			return nil
@@ -69,6 +71,46 @@ func newExtensionInitCmd(opts *GlobalOptions) *cobra.Command {
 	c.Flags().StringVar(&module, "module", "", "Go module path (backend; default github.com/example/<name>)")
 	_ = c.MarkFlagRequired("type")
 	return c
+}
+
+// extensionContractWarning is intentionally best-effort: metadata discovery is
+// unavailable on old servers and offline scaffolds must still succeed.
+func extensionContractWarning(cmd *cobra.Command, opts *GlobalOptions, kind string) string {
+	server := strings.TrimSpace(opts.ServerFlag)
+	if server == "" {
+		server = strings.TrimSpace(os.Getenv("INARI_SERVER"))
+	}
+	if server == "" {
+		_, cc, err := opts.resolveContext()
+		if err != nil {
+			return ""
+		}
+		server = strings.TrimSpace(cc.Server)
+	}
+	if server == "" {
+		return ""
+	}
+	metadata, err := api.GetContractMetadata(cmd.Context(), server)
+	if err != nil {
+		return fmt.Sprintf("extension contract check unavailable: %v", err)
+	}
+	if metadata == nil {
+		return ""
+	}
+	declared := extension.BackendContract
+	var supported []string
+	if kind == "ui" {
+		declared = extension.UIHostAPI
+		if metadata.UiHostApis != nil {
+			supported = *metadata.UiHostApis
+		}
+	} else if metadata.PluginContracts != nil {
+		supported = *metadata.PluginContracts
+	}
+	if !extension.ContractIntersection(declared, supported) {
+		return fmt.Sprintf("generated extension declares %s, but server advertises [%s]", declared, strings.Join(supported, ", "))
+	}
+	return ""
 }
 
 func pascalCase(name string) string {

@@ -50,6 +50,8 @@ inari extension init my-ext --type backend
 inari extension init my-ui-ext --type ui
 ```
 
+Extension scaffolds include `extension.yaml` contract declarations (`inari.plugin.v1` or `inari.ui.v1`). When a server is configured, the command makes a bounded, unauthenticated `GET /api/v1/meta/contracts` check and warns if the generated contract is not advertised. Offline, old-server, auth, network, and malformed-response failures never block scaffolding; no tenant or interactive login is required.
+
 Every command supports `-o table|json|yaml` and a genuinely helpful `--help`.
 
 ## Configuration

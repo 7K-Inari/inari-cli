@@ -1,0 +1,17 @@
+apiVersion: inari.io/v1alpha1
+kind: Extension
+metadata:
+  name: {{.Name}}
+spec:
+  version: 0.1.0
+  kinds: [ui]
+  ui:
+    remoteEntry: https://extensions.example.com/{{.Name}}/remoteEntry.js
+    slots:
+      - { kind: page, name: {{.Name}} }
+  contracts:
+    ui:
+      sdk: "{{.UISDKRange}}"
+      hostApi: {{.UIHostAPI}}
+  permissions:
+    - extensions:invoke:{{.Name}}
