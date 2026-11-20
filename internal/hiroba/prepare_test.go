@@ -24,7 +24,7 @@ func TestPrepareCanonicalMatrix(t *testing.T) {
 		for mask := 0; mask < 32; mask++ {
 			opts := matrixOptions(kind, mask)
 			fixture := filepath.Join(t.TempDir(), opts.Name)
-			if err := scaffoldWithPin(fixture, opts, candidateWorkflowSHA, "v1.1.0"); err != nil {
+			if err := Scaffold(fixture, opts); err != nil {
 				t.Fatal(err)
 			}
 			for _, script := range []string{"build-indexes.py", "sync-release-please-config.py"} {

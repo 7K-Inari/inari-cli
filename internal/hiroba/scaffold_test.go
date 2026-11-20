@@ -12,8 +12,6 @@ import (
 	"testing"
 )
 
-const candidateWorkflowSHA = "ae4be82b95cee92eecd8d87ba55204dea750c7e1"
-
 type goldenFile struct {
 	Mode    fs.FileMode `json:"mode"`
 	Content string      `json:"content"`
@@ -74,7 +72,7 @@ func TestScaffoldFullMatrixGolden(t *testing.T) {
 			t.Run(fmt.Sprintf("%s/%02d", kind, mask), func(t *testing.T) {
 				opts := matrixOptions(kind, mask)
 				target := filepath.Join(t.TempDir(), opts.Name)
-				if err := scaffoldWithPin(target, opts, candidateWorkflowSHA, "v1.1.0"); err != nil {
+				if err := Scaffold(target, opts); err != nil {
 					t.Fatalf("valid option combination failed: %v", err)
 				}
 				actual := readTree(t, target)
@@ -119,7 +117,7 @@ func TestFullMatrixContentContracts(t *testing.T) {
 		for mask := 0; mask < 32; mask++ {
 			opts := matrixOptions(kind, mask)
 			target := filepath.Join(t.TempDir(), opts.Name)
-			if err := scaffoldWithPin(target, opts, candidateWorkflowSHA, "v1.1.0"); err != nil {
+			if err := Scaffold(target, opts); err != nil {
 				t.Fatalf("%s mask %d: %v", kind, mask, err)
 			}
 			tree := readTree(t, target)
