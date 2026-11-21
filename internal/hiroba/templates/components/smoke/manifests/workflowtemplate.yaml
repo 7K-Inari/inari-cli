@@ -1,10 +1,10 @@
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  name: __HIROBA_NAME__-fixture
+  name: __HIROBA_FIXTURE_NAME__
   namespace: default
   labels:
-    inari.dev/smoke-target: __HIROBA_NAME__-smoke
+    inari.dev/smoke-target: __HIROBA_SMOKE_LABEL__
     inari.dev/suite-schema: inari.smoke.v1
 spec:
   entrypoint: smoke
@@ -23,7 +23,7 @@ spec:
         command: [sh, -c]
         args:
           - >-
-            curl --fail --silent --show-error --max-time 10 http://__HIROBA_NAME__-fixture.default.svc:8080/ |
+            curl --fail --silent --show-error --max-time 10 http://__HIROBA_FIXTURE_NAME__.default.svc:8080/ |
             grep -q 'Welcome to nginx'
         securityContext:
           runAsNonRoot: true

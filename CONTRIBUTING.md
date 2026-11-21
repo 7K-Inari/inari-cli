@@ -59,6 +59,18 @@ To regenerate embedded index/release metadata with the canonical workflows imple
 HIROBA_PREPARE_MATRIX=1 HIROBA_WORKFLOWS_DIR=/path/to/workflows go test ./internal/hiroba -run TestPrepareCanonicalMatrix
 ```
 
+Verify all 128 generated trees against a reviewed candidate checkout, including pins, schemas, generated drift, discovery, and release planning:
+
+```sh
+HIROBA_VERIFY_MATRIX=1 HIROBA_WORKFLOWS_DIR=/path/to/workflows go test ./internal/hiroba -run TestVerifyWorkflowMatrix -count=1
+```
+
+Before merging a production-pin update, check out the exact signed target commit and additionally require that it equals the CLI constant:
+
+```sh
+HIROBA_VERIFY_MATRIX=1 HIROBA_REQUIRE_PRODUCTION_PIN=1 HIROBA_WORKFLOWS_DIR=/path/to/workflows go test ./internal/hiroba -run TestVerifyWorkflowMatrix -count=1
+```
+
 The workflows checkout must support the reviewed `releaseComponents` candidate contract. Run its complete release-plan matrix and workflow-contract tests from that checkout:
 
 ```sh

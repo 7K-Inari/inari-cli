@@ -14,18 +14,22 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with: {path: consumer, fetch-depth: 0}
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {repository: 7K-Hiroba/workflows, ref: __WORKFLOWS_V1_SHA__, path: .hiroba/workflows}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with: {python-version: "3.11"}
+      - run: pip install --requirement .hiroba/workflows/requirements-dev.txt
       - id: source
         env: {CHART: "${{ inputs.chart }}", VERSION: "${{ inputs.version }}"}
         run: |
           set -euo pipefail
           [[ "$CHART" =~ ^[a-z0-9][a-z0-9-]*$ ]] || exit 2
           [[ "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?$ ]] || exit 2
-          TAG="chart-$CHART-v$VERSION"
+          python3 .hiroba/workflows/scripts/discover-components.py --root consumer --all > plan.json
+          release_component=$(jq -r --arg chart "$CHART" 'first(.components[] | select(.kind == "chart" and .name == $chart) | (.releaseComponent // .name)) // empty' plan.json)
+          [[ -n "$release_component" ]] || { echo "chart $CHART is not declared" >&2; exit 2; }
+          TAG="$release_component-v$VERSION"
           sha=$(git -C consumer ls-remote origin "refs/tags/$TAG^{}" | awk 'NR == 1 {print $1}')
-          if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]]; then
-            TAG="$CHART-v$VERSION"
-            sha=$(git -C consumer ls-remote origin "refs/tags/$TAG^{}" | awk 'NR == 1 {print $1}')
-          fi
           [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "repair requires an existing annotated tag $TAG" >&2; exit 2; }
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
   repair:

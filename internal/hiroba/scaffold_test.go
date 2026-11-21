@@ -200,6 +200,69 @@ func TestFullMatrixContentContracts(t *testing.T) {
 	}
 }
 
+func TestBoundedResourceNameMatchesWorkflowContract(t *testing.T) {
+	name := "a" + strings.Repeat("b", 61) + "c"
+	if got := boundedResourceName(name, 53); got != "abbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb-00bdc0e0" {
+		t.Fatalf("bounded release name = %q", got)
+	}
+	if got := boundedResourceName("matrix-app", 53); got != "matrix-app" {
+		t.Fatalf("short name changed to %q", got)
+	}
+	other := "a" + strings.Repeat("b", 61) + "d"
+	if boundedResourceName(name, 53) == boundedResourceName(other, 53) {
+		t.Fatal("distinct long names received the same bounded identity")
+	}
+}
+
+func TestScaffoldMaxNameUsesBoundedRuntimeIdentifiers(t *testing.T) {
+	name := "a" + strings.Repeat("b", 61) + "c"
+	t.Run("helm", func(t *testing.T) {
+		target := filepath.Join(t.TempDir(), name)
+		opts := Options{Name: name, Type: "catalog", WithChart: true, WithRuntimeSmoke: true}
+		if err := Scaffold(target, opts); err != nil {
+			t.Fatal(err)
+		}
+		tree := readTree(t, target)
+		releaseName := boundedResourceName(name, 53)
+		if !strings.Contains(tree["tests/smoke/suite.yaml"].Content, "name: "+releaseName) {
+			t.Error("Helm readiness does not use the bounded release name")
+		}
+		if !strings.Contains(tree["packages/"+name+"/tests/run.sh"].Content, "helm template "+releaseName) {
+			t.Error("package test does not use the bounded release name")
+		}
+		if !strings.Contains(tree[".hiroba.yaml"].Content, "app: "+name) || !strings.Contains(tree["tests/smoke/suite.yaml"].Content, "id: "+name) {
+			t.Error("bounded runtime names changed the permanent app or publication identity")
+		}
+	})
+
+	t.Run("manifests", func(t *testing.T) {
+		target := filepath.Join(t.TempDir(), name)
+		opts := Options{Name: name, Type: "template", WithRuntimeSmoke: true}
+		if err := Scaffold(target, opts); err != nil {
+			t.Fatal(err)
+		}
+		tree := readTree(t, target)
+		fixtureName := boundedResourceName(name, 55) + "-fixture"
+		smokeLabel := boundedResourceName(name, 57) + "-smoke"
+		if len(fixtureName) != 63 || len(smokeLabel) != 63 {
+			t.Fatalf("unexpected boundary lengths: fixture=%d label=%d", len(fixtureName), len(smokeLabel))
+		}
+		for path, content := range map[string]string{
+			"tests/smoke/fixtures/app/deployment.yaml": fixtureName,
+			"tests/smoke/fixtures/app/service.yaml":    fixtureName,
+			"tests/smoke/suite.yaml":                   fixtureName,
+			"tests/smoke/workflowtemplate.yaml":        smokeLabel,
+		} {
+			if !strings.Contains(tree[path].Content, content) {
+				t.Errorf("%s does not contain bounded identity %q", path, content)
+			}
+		}
+		if !strings.Contains(tree[".hiroba.yaml"].Content, "app: "+name) || !strings.Contains(tree["tests/smoke/suite.yaml"].Content, "id: "+name+"-smoke") {
+			t.Error("bounded runtime names changed the permanent app or publication identity")
+		}
+	})
+}
+
 func assertReleaseContract(t *testing.T, opts Options, tree goldenTree) {
 	t.Helper()
 	var config struct {
@@ -268,10 +331,13 @@ func assertReleaseContract(t *testing.T, opts Options, tree goldenTree) {
 	}
 	if opts.WithChart {
 		repair := tree[".github/workflows/chart-repair.yml"].Content
-		for _, expected := range []string{`TAG="chart-$CHART-v$VERSION"`, `TAG="$CHART-v$VERSION"`} {
+		for _, expected := range []string{"discover-components.py", `(.releaseComponent // .name)`, `TAG="$release_component-v$VERSION"`} {
 			if !strings.Contains(repair, expected) {
 				t.Errorf("%s mask %d chart repair missing %q", opts.Type, optionMask(opts), expected)
 			}
+		}
+		if strings.Contains(repair, `TAG="chart-$CHART`) || strings.Contains(repair, `TAG="$CHART`) {
+			t.Errorf("%s mask %d chart repair still guesses tag identities", opts.Type, optionMask(opts))
 		}
 	}
 }
@@ -287,6 +353,39 @@ func TestScaffoldRefusesExistingBrokenSymlink(t *testing.T) {
 	}
 	if _, err := os.Lstat(target); err != nil {
 		t.Fatalf("existing symlink was removed or replaced: %v", err)
+	}
+}
+
+func TestScaffoldConcurrentSameTarget(t *testing.T) {
+	parent := t.TempDir()
+	target := filepath.Join(parent, "matrix-app")
+	start := make(chan struct{})
+	results := make(chan error, 2)
+	for range 2 {
+		go func() {
+			<-start
+			results <- Scaffold(target, Options{Name: "matrix-app", Type: "app"})
+		}()
+	}
+	close(start)
+	successes := 0
+	for range 2 {
+		if err := <-results; err == nil {
+			successes++
+		}
+	}
+	if successes != 1 {
+		t.Fatalf("concurrent scaffold successes = %d, want exactly one", successes)
+	}
+	if _, err := os.Stat(filepath.Join(target, "README.md")); err != nil {
+		t.Fatalf("winning scaffold is incomplete: %v", err)
+	}
+	temporary, err := filepath.Glob(filepath.Join(parent, ".matrix-app.tmp-*"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(temporary) != 0 {
+		t.Fatalf("temporary directories leaked: %v", temporary)
 	}
 }
 

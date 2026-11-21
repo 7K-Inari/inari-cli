@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: __HIROBA_NAME__-fixture
+  name: __HIROBA_FIXTURE_NAME__
   namespace: default
-  labels: {app.kubernetes.io/name: __HIROBA_NAME__-fixture}
+  labels: {app.kubernetes.io/name: __HIROBA_FIXTURE_NAME__}
 spec:
   replicas: 1
   selector:
-    matchLabels: {app.kubernetes.io/name: __HIROBA_NAME__-fixture}
+    matchLabels: {app.kubernetes.io/name: __HIROBA_FIXTURE_NAME__}
   template:
     metadata:
-      labels: {app.kubernetes.io/name: __HIROBA_NAME__-fixture}
+      labels: {app.kubernetes.io/name: __HIROBA_FIXTURE_NAME__}
     spec:
       automountServiceAccountToken: false
       securityContext:

@@ -1,6 +1,7 @@
 package hiroba
 
 import (
+	"crypto/sha256"
 	"embed"
 	"fmt"
 	"io/fs"
@@ -283,6 +284,16 @@ func pascalName(name string) string {
 	return strings.Join(parts, "")
 }
 
+// boundedResourceName mirrors workflows scripts/lib/names.py; the shared test vector prevents drift.
+func boundedResourceName(name string, maxLength int) string {
+	if len(name) <= maxLength {
+		return name
+	}
+	digest := sha256.Sum256([]byte(name))
+	prefix := strings.TrimRight(name[:maxLength-9], "-")
+	return fmt.Sprintf("%s-%x", prefix, digest[:4])
+}
+
 func dynamicReplacements(opts Options) map[string]string {
 	effectivePlugin := opts.WithPlugin || opts.Type == "extension"
 	components := ""
@@ -386,11 +397,14 @@ func renderFiles(files map[string]fileSpec, opts Options, workflowSHA, workflowV
 	}
 	dynamic := dynamicReplacements(opts)
 	baseReplacements := map[string]string{
-		"__HIROBA_NAME__":        opts.Name,
-		"__HIROBA_NAME_PASCAL__": pascalName(opts.Name),
-		"__HIROBA_MODULE__":      opts.Module,
-		"__WORKFLOWS_V1_SHA__":   workflowSHA,
-		"__WORKFLOWS_VERSION__":  workflowVersion,
+		"__HIROBA_NAME__":         opts.Name,
+		"__HIROBA_NAME_PASCAL__":  pascalName(opts.Name),
+		"__HIROBA_HELM_RELEASE__": boundedResourceName(opts.Name, 53),
+		"__HIROBA_FIXTURE_NAME__": boundedResourceName(opts.Name, 55) + "-fixture",
+		"__HIROBA_SMOKE_LABEL__":  boundedResourceName(opts.Name, 57) + "-smoke",
+		"__HIROBA_MODULE__":       opts.Module,
+		"__WORKFLOWS_V1_SHA__":    workflowSHA,
+		"__WORKFLOWS_VERSION__":   workflowVersion,
 	}
 	paths := make([]string, 0, len(files))
 	for destination := range files {

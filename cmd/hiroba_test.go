@@ -127,11 +127,15 @@ func TestHirobaInitValidation(t *testing.T) {
 	}{
 		{name: "name", args: []string{"hiroba", "init", "Bad-Name"}, want: "invalid name"},
 		{name: "type", args: []string{"hiroba", "init", "valid-name", "--type", "banana"}, want: "invalid type"},
+		{name: "empty type", args: []string{"hiroba", "init", "valid-name", "--type", ""}, want: "invalid type"},
 		{name: "module", args: []string{"hiroba", "init", "valid-name", "--module", "bad module"}, want: "invalid Go module"},
+		{name: "empty module", args: []string{"hiroba", "init", "valid-name", "--module", ""}, want: "invalid Go module"},
+		{name: "whitespace module", args: []string{"hiroba", "init", "valid-name", "--module", " \t"}, want: "invalid Go module"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			root := NewRootCmd("dev", "none", "now", &bytes.Buffer{}, &bytes.Buffer{})
-			root.SetArgs(test.args)
+			args := append(append([]string{}, test.args...), "--dir", t.TempDir())
+			root.SetArgs(args)
 			if err := root.Execute(); err == nil || !strings.Contains(err.Error(), test.want) {
 				t.Fatalf("expected %q error, got %v", test.want, err)
 			}

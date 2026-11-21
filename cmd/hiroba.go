@@ -45,6 +45,12 @@ func newHirobaInitCmd(opts *GlobalOptions) *cobra.Command {
   inari hiroba init my-service --type app --with-plugin --with-ui --with-chart --with-observability --with-runtime-smoke`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			options.Name = args[0]
+			if cmd.Flags().Changed("type") && options.Type == "" {
+				return fmt.Errorf("invalid type %q: want app|extension|catalog|template", options.Type)
+			}
+			if cmd.Flags().Changed("module") && strings.TrimSpace(options.Module) == "" {
+				return fmt.Errorf("invalid Go module path %q: path must not be empty", options.Module)
+			}
 			target := filepath.Join(dir, options.Name)
 			if err := hiroba.Scaffold(target, options); err != nil {
 				return err

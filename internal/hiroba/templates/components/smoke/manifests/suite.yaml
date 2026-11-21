@@ -7,7 +7,7 @@ target:
     path: fixtures/app
     fixtureOnly: true
     readiness:
-      - {kind: Deployment, name: __HIROBA_NAME__-fixture, namespace: default, condition: Available}
+      - {kind: Deployment, name: __HIROBA_FIXTURE_NAME__, namespace: default, condition: Available}
 executableProfiles: [ci]
 compatibleAppVersions: ">=0.1.0 <2.0.0"
 parameterContract: inari.smoke.params.v1

@@ -9,6 +9,59 @@ import (
 	"testing"
 )
 
+// TestVerifyWorkflowMatrix checks every generated tree against an external candidate or exact production checkout.
+func TestVerifyWorkflowMatrix(t *testing.T) {
+	if os.Getenv("HIROBA_VERIFY_MATRIX") != "1" {
+		t.Skip("set HIROBA_VERIFY_MATRIX=1 to verify against a workflows checkout")
+	}
+	workflows := os.Getenv("HIROBA_WORKFLOWS_DIR")
+	if workflows == "" {
+		t.Fatal("HIROBA_WORKFLOWS_DIR must name the workflows checkout")
+	}
+	if os.Getenv("HIROBA_REQUIRE_PRODUCTION_PIN") == "1" {
+		command := exec.Command("git", "-C", workflows, "rev-parse", "HEAD")
+		output, err := command.CombinedOutput()
+		if err != nil {
+			t.Fatalf("resolve workflows HEAD: %v\n%s", err, output)
+		}
+		if got := strings.TrimSpace(string(output)); got != WorkflowSHA {
+			t.Fatalf("production verification requires %s, got %s", WorkflowSHA, got)
+		}
+	}
+	python := filepath.Join(workflows, ".venv", "bin", "python")
+	for _, kind := range []string{"app", "extension", "catalog", "template"} {
+		for mask := 0; mask < 32; mask++ {
+			t.Run(fmt.Sprintf("%s/%02d", kind, mask), func(t *testing.T) {
+				opts := matrixOptions(kind, mask)
+				fixture := filepath.Join(t.TempDir(), opts.Name)
+				if err := Scaffold(fixture, opts); err != nil {
+					t.Fatal(err)
+				}
+				if output, err := exec.Command("git", "init", "-q", fixture).CombinedOutput(); err != nil {
+					t.Fatalf("initialize fixture: %v\n%s", err, output)
+				}
+				commands := [][]string{
+					{filepath.Join(workflows, "scripts", "check-workflow-pins.py"), "--root", fixture, "--require-rendered"},
+					{filepath.Join(workflows, "scripts", "validate-repository.py"), "--root", fixture},
+					{filepath.Join(workflows, "scripts", "build-indexes.py"), "--root", fixture, "--check"},
+					{filepath.Join(workflows, "scripts", "sync-release-please-config.py"), "--root", fixture, "--check"},
+					{filepath.Join(workflows, "scripts", "discover-components.py"), "--root", fixture, "--all"},
+					{filepath.Join(workflows, "scripts", "prepare-release-plan.py"), "--root", fixture, "--source-sha", strings.Repeat("a", 40), "--rehearsal"},
+				}
+				if opts.WithObservability {
+					commands = append(commands, []string{filepath.Join(workflows, "scripts", "render-observability.py"), "--root", fixture, "--check"})
+				}
+				for _, args := range commands {
+					command := exec.Command(python, args...)
+					if output, err := command.CombinedOutput(); err != nil {
+						t.Fatalf("%s: %v\n%s", filepath.Base(args[0]), err, output)
+					}
+				}
+			})
+		}
+	}
+}
+
 // TestPrepareCanonicalMatrix regenerates embedded generated outputs with the
 // canonical workflows scripts. It is intentionally manual and never runs in CI.
 func TestPrepareCanonicalMatrix(t *testing.T) {
