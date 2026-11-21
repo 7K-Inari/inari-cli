@@ -252,12 +252,14 @@ func dynamicReplacements(opts Options) map[string]string {
 		components += "  ui: {path: ui, version: 0.1.0}\n"
 	}
 	observability := ""
+	packageObservability := ""
 	if opts.WithObservability {
 		observability = "observability:\n  path: observability\n"
 		if opts.WithChart {
 			observability += "  chart: charts/" + opts.Name + "\n"
 		}
 		observability += "  package: packages/observability-pack\n  alloyConfig: observability/tests/alloy/config.river\n"
+		packageObservability = "\nobservability:\n  package: observability-pack\n  versionRange: \">=0.1.0 <2.0.0\""
 	}
 	smoke := ""
 	if opts.WithRuntimeSmoke {
@@ -294,6 +296,7 @@ func dynamicReplacements(opts Options) map[string]string {
 	return map[string]string{
 		"__HIROBA_COMPONENTS__":             components,
 		"__HIROBA_OBSERVABILITY__":          observability,
+		"__HIROBA_PACKAGE_OBSERVABILITY__":  packageObservability,
 		"__HIROBA_SMOKE__":                  smoke,
 		"__HIROBA_COMPATIBILITY__":          compatibility,
 		"__HIROBA_EXTENSION_KINDS__":        kinds,

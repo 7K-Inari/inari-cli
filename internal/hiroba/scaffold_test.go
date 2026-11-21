@@ -145,6 +145,13 @@ func TestFullMatrixContentContracts(t *testing.T) {
 					}
 				}
 			}
+			if !opts.WithObservability && (kind == "app" || kind == "catalog") {
+				for _, path := range []string{"packages/matrix-app/package.yaml", "catalog.yaml"} {
+					if strings.Contains(tree[path].Content, "observability-pack") {
+						t.Errorf("%s mask %d references an unselected observability pack in %s", kind, mask, path)
+					}
+				}
+			}
 			if opts.WithObservability && !opts.WithChart {
 				if _, ok := tree["packages/observability-pack/rgd.yaml"]; !ok {
 					t.Errorf("%s mask %d omitted chartless observability pack", kind, mask)
