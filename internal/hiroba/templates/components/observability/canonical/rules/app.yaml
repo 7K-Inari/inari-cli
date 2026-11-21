@@ -1,0 +1,14 @@
+groups:
+  - name: __HIROBA_NAME__
+    interval: 1m
+    rules:
+      - record: workflows_scaffold:up:sum
+        expr: sum(workflows_scaffold_up)
+      - alert: WorkflowsScaffoldDown
+        expr: workflows_scaffold_up == 0
+        for: 5m
+        labels:
+          severity: critical
+          app: __HIROBA_NAME__
+        annotations:
+          summary: Synthetic __HIROBA_NAME__ target is down

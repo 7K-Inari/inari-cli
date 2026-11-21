@@ -1,0 +1,6 @@
+repoURL: oci://ghcr.io/7k-hiroba/__HIROBA_NAME__/charts
+chart: __HIROBA_NAME__
+namespace: __HIROBA_NAME__
+channels:
+  incubating: 0.1.0
+  stable: 0.1.0

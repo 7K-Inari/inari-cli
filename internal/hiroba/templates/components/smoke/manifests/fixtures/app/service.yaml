@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: __HIROBA_FIXTURE_NAME__
+  namespace: default
+spec:
+  type: ClusterIP
+  selector: {app.kubernetes.io/name: __HIROBA_FIXTURE_NAME__}
+  ports:
+    - {name: http, port: 8080, targetPort: http}

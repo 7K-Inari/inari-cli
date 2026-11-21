@@ -1,0 +1,5 @@
+version: 0.1.0
+channel: incubating
+type: platform-app
+description: First-party chart package used by the workflow scaffold
+category: test__HIROBA_PACKAGE_OBSERVABILITY__

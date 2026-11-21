@@ -1,0 +1,4 @@
+observability:
+  enabled: false
+  rules:
+    enabled: false

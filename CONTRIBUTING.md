@@ -38,6 +38,71 @@ Use the individual agreement when you own the contribution yourself. If your emp
 
 No PDF, email, or manual `Signed-off-by` workflow is required. Maintainers can use the CLA assistant dashboard to review agreement versions and signing records without accepting signatures in repository files.
 
+## Hiroba scaffold verification
+
+Run the complete 128-combination golden matrix and all CLI tests:
+
+```sh
+go test ./internal/hiroba
+go test ./...
+```
+
+Golden files contain every path, mode, and byte. Update them only after an intentional contract change:
+
+```sh
+HIROBA_UPDATE_GOLDEN=1 go test ./internal/hiroba -run TestScaffoldFullMatrixGolden
+```
+
+To regenerate embedded index/release metadata with the canonical workflows implementation, set `HIROBA_WORKFLOWS_DIR` to the reviewed checkout containing `.venv` and run:
+
+```sh
+HIROBA_PREPARE_MATRIX=1 HIROBA_WORKFLOWS_DIR=/path/to/workflows go test ./internal/hiroba -run TestPrepareCanonicalMatrix
+```
+
+Verify all 128 generated trees against a reviewed candidate checkout, including pins, schemas, generated drift, discovery, and release planning:
+
+```sh
+HIROBA_VERIFY_MATRIX=1 HIROBA_WORKFLOWS_DIR=/path/to/workflows go test ./internal/hiroba -run TestVerifyWorkflowMatrix -count=1
+```
+
+Before merging a production-pin update, check out the exact signed target commit and additionally require that it equals the CLI constant:
+
+```sh
+HIROBA_VERIFY_MATRIX=1 HIROBA_REQUIRE_PRODUCTION_PIN=1 HIROBA_WORKFLOWS_DIR=/path/to/workflows go test ./internal/hiroba -run TestVerifyWorkflowMatrix -count=1
+```
+
+The workflows checkout must support the reviewed `releaseComponents` candidate contract. Run its complete release-plan matrix and workflow-contract tests from that checkout:
+
+```sh
+cd "$HIROBA_WORKFLOWS_DIR"
+.venv/bin/python -m unittest tests.unit.test_full_matrix_release_plan tests.unit.test_workflow_contracts
+cd -
+```
+
+Generate clean fixtures with no server configuration:
+
+```sh
+go build -o "$TMP/inari" .
+mkdir -p "$TMP/home"
+HOME="$TMP/home" "$TMP/inari" hiroba init hiroba-full --dir "$TMP" --type app --with-plugin --with-ui --with-chart --with-observability --with-runtime-smoke
+HOME="$TMP/home" "$TMP/inari" hiroba init hiroba-chartless-obs --dir "$TMP" --type catalog --with-observability
+HOME="$TMP/home" "$TMP/inari" hiroba init hiroba-nonplugin-smoke --dir "$TMP" --type catalog --with-chart --with-runtime-smoke
+HOME="$TMP/home" "$TMP/inari" hiroba init hiroba-chartless-smoke --dir "$TMP" --type template --with-runtime-smoke
+```
+
+For each fixture, initialize a temporary git repository, then run the following with `WF` set to the reviewed workflows checkout and `REGISTRY` set to a temporary app-registry fixture:
+
+```sh
+python3 "$WF/scripts/check-workflow-pins.py" --root "$FIXTURE" --require-rendered
+python3 "$WF/scripts/validate-repository.py" --root "$FIXTURE" --registry "$REGISTRY"
+python3 "$WF/scripts/build-indexes.py" --root "$FIXTURE" --check
+python3 "$WF/scripts/sync-release-please-config.py" --root "$FIXTURE" --check
+python3 "$WF/scripts/discover-components.py" --root "$FIXTURE" --all
+python3 "$WF/scripts/prepare-release-plan.py" --root "$FIXTURE" --source-sha "$(git -C "$FIXTURE" rev-parse HEAD)" --rehearsal >/dev/null
+```
+
+For observability fixtures also run `render-observability.py --check` and `test-offline-observability.sh --root "$FIXTURE"`. Run applicable package, Go, UI, chart, compatibility, and runtime lanes with the exact commands in the pinned reusable workflows. Runtime verification uses only local kind/CI profiles; never run real stage/prod from this change.
+
 ## License
 
 Inari code, documentation, and community catalog content are currently distributed under [Apache License 2.0](LICENSE), unless a file explicitly states otherwise. The CLA preserves 7K Group's ability to use different outbound terms in the future; versions already distributed under Apache-2.0 remain available under that license.

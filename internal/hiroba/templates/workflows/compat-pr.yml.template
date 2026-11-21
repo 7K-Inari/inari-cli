@@ -1,0 +1,7 @@
+name: compatibility PR
+on: {pull_request: {branches: [main]}}
+permissions: {contents: read}
+jobs:
+  compat:
+    uses: 7K-Hiroba/workflows/.github/workflows/compat-check.yml@__WORKFLOWS_V1_SHA__ # __WORKFLOWS_VERSION__
+    with: {root: ., mode: pr}

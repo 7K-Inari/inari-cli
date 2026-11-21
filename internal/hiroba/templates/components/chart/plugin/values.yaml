@@ -1,0 +1,20 @@
+replicaCount: 1
+image:
+  repository: ghcr.io/7k-hiroba/__HIROBA_NAME__/extension
+  tag: "0.1.0"
+  digest: ""
+  pullPolicy: IfNotPresent
+service:
+  type: ClusterIP
+  port: 8080
+observability:
+  enabled: false
+  rules:
+    enabled: false
+resources:
+  requests:
+    cpu: 25m
+    memory: 32Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
