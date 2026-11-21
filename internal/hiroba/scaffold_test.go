@@ -276,6 +276,20 @@ func assertReleaseContract(t *testing.T, opts Options, tree goldenTree) {
 	}
 }
 
+func TestScaffoldRefusesExistingBrokenSymlink(t *testing.T) {
+	parent := t.TempDir()
+	target := filepath.Join(parent, "matrix-app")
+	if err := os.Symlink(filepath.Join(parent, "missing"), target); err != nil {
+		t.Skipf("symlinks are unavailable: %v", err)
+	}
+	if err := Scaffold(target, Options{Name: "matrix-app", Type: "app"}); err == nil || !strings.Contains(err.Error(), "already exists") {
+		t.Fatalf("existing symlink error = %v, want already exists", err)
+	}
+	if _, err := os.Lstat(target); err != nil {
+		t.Fatalf("existing symlink was removed or replaced: %v", err)
+	}
+}
+
 func TestNormalizeOptionsRejectsReservedObservabilityPack(t *testing.T) {
 	_, err := normalizeOptions(Options{Name: "observability-pack", Type: "catalog", WithObservability: true})
 	if err == nil || !strings.Contains(err.Error(), "reserved") {

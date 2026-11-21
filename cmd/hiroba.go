@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
-	"github.com/7K-Inari/inari-cli/internal/config"
 	"github.com/7K-Inari/inari-cli/internal/hiroba"
 )
 
@@ -21,21 +21,17 @@ func newHirobaCmd(opts *GlobalOptions) *cobra.Command {
 }
 
 func effectiveHirobaServer(opts *GlobalOptions) string {
-	if opts.ServerFlag != "" {
-		return opts.ServerFlag
-	}
-	if server := os.Getenv("INARI_SERVER"); server != "" {
+	if server := strings.TrimSpace(opts.ServerFlag); server != "" {
 		return server
 	}
-	cfg, err := config.Load()
+	if server := strings.TrimSpace(os.Getenv("INARI_SERVER")); server != "" {
+		return server
+	}
+	_, current, err := opts.resolveContext()
 	if err != nil {
 		return ""
 	}
-	_, current, err := cfg.Current()
-	if err != nil {
-		return ""
-	}
-	return current.Server
+	return strings.TrimSpace(current.Server)
 }
 
 func newHirobaInitCmd(opts *GlobalOptions) *cobra.Command {

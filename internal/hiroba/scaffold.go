@@ -430,8 +430,8 @@ func scaffoldWithPin(destDir string, opts Options, workflowSHA, workflowVersion 
 	if err != nil {
 		return err
 	}
-	if _, err := os.Stat(target); err == nil {
-		return fmt.Errorf("directory %s already exists", destDir)
+	if _, err := os.Lstat(target); err == nil {
+		return fmt.Errorf("path %s already exists", destDir)
 	} else if !os.IsNotExist(err) {
 		return err
 	}

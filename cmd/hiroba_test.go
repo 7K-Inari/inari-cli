@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/7K-Inari/inari-cli/internal/config"
 )
 
 func TestHirobaInitFullAppOffline(t *testing.T) {
@@ -98,6 +100,22 @@ func TestHirobaInitContractWarningDoesNotBlock(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dir, "warning-app", "extension.yaml")); err != nil {
 		t.Fatalf("scaffold missing after warning: %v", err)
+	}
+}
+
+func TestEffectiveHirobaServerUsesNamedContext(t *testing.T) {
+	configDir := t.TempDir()
+	t.Setenv("INARI_CONFIG_DIR", configDir)
+	t.Setenv("INARI_SERVER", "")
+	cfg := &config.Config{CurrentContext: "current"}
+	cfg.SetContext("current", config.Context{Server: "https://current.example.com"})
+	cfg.SetContext("alternate", config.Context{Server: "https://alternate.example.com"})
+	if err := cfg.Save(); err != nil {
+		t.Fatal(err)
+	}
+	opts := &GlobalOptions{ContextFlag: "alternate"}
+	if got := effectiveHirobaServer(opts); got != "https://alternate.example.com" {
+		t.Fatalf("effectiveHirobaServer() = %q, want alternate context server", got)
 	}
 }
 
