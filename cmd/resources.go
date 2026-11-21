@@ -15,7 +15,7 @@ func newResourcesCmd(opts *GlobalOptions) *cobra.Command {
 across all clusters in the tenant, with health and sync status streamed back
 by the in-cluster agents.`,
 	}
-	c.AddCommand(newResourcesListCmd(opts), newResourcesGetCmd(opts))
+	c.AddCommand(newResourcesListCmd(opts), newResourcesGetCmd(opts), newResourcesObservabilityCmd(opts))
 	return c
 }
 
