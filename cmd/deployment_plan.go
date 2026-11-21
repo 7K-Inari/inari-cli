@@ -130,6 +130,11 @@ func completePlanPreflight(ctx context.Context, client *api.Client, tenant strin
 	if request.IdempotencyKey == "" {
 		request.IdempotencyKey = uuid.NewString()
 	}
+	observability, err := observabilityFromFlags(flags)
+	if err != nil {
+		return nil, err
+	}
+	request.Observability = observability
 	initial, err := planPreflight(ctx, client, tenant, request)
 	if err != nil {
 		return nil, err

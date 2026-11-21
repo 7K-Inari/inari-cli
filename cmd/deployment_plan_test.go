@@ -32,6 +32,12 @@ func observabilityPlan(body map[string]any, state string) map[string]any {
 		"planFingerprint": "sha256:plan", "state": state, "gate": map[string]any{"companionRendering": false, "deployedVerification": false},
 		"createdAt": "2026-11-15T21:42:00Z", "updatedAt": "2026-11-15T21:42:00Z",
 	}
+	if requested, ok := body["observability"].(map[string]any); ok && body["operation"] != "provisionExisting" {
+		if requested["mode"] == "" || requested["mode"] == nil {
+			requested["mode"] = "skip"
+		}
+		plan["observability"] = requested
+	}
 	if body["operation"] == "provisionExisting" {
 		plan["appInstanceId"] = "app-1"
 		deployment := plan["deployment"].(map[string]any)
@@ -42,11 +48,11 @@ func observabilityPlan(body map[string]any, state string) map[string]any {
 		}
 	}
 	obs := plan["observability"].(map[string]any)
-	if obs["mode"] != "skip" {
+	if obs["mode"] == "provision" {
 		obs["pack"] = map[string]any{"itemId": "hiroba/observability-pack", "version": "0.2.0", "digest": "sha256:pack", "renderContract": "inari.observability-pack/v2"}
 		obs["target"] = map[string]any{"id": "rt-mon", "revision": 7, "selection": map[string]any{"folder": "acme-inc/payments-api", "datasource": "metrics-central", "evaluation": "central"}}
 	}
-	if state == "submitted" && obs["mode"] != "skip" {
+	if state == "submitted" && obs["mode"] == "provision" {
 		plan["appInstanceId"] = "app-1"
 		plan["companion"] = map[string]any{
 			"id": "oc-1", "planId": "dp-1", "appInstanceId": "app-1", "appRevision": "1.4.0@sha256:abc", "appSourceDigest": "sha256:abc", "capabilityDigest": "sha256:cap",
@@ -100,11 +106,12 @@ func observabilityServerWithSubmit(t *testing.T, ready bool, onSubmit func(map[s
 }
 
 func TestDeployChartAndTemplateUseCommonPlan(t *testing.T) {
-	srv := observabilityServer(t, false)
+	var submitted map[string]any
+	srv := observabilityServerWithSubmit(t, false, func(body map[string]any) { submitted = body })
 	defer srv.Close()
 	for _, args := range [][]string{
-		{"deploy", "chart", "oci://ghcr.io/7k-hiroba/payments-api/charts/payments-api", "--source", "hiroba", "--version", "1.4.0", "--digest", "sha256:abc", "--cluster", "clu-1"},
-		{"deploy", "template", "hiroba/service", "--name", "payments"},
+		{"deploy", "chart", "oci://ghcr.io/7k-hiroba/payments-api/charts/payments-api", "--source", "hiroba", "--version", "1.4.0", "--digest", "sha256:abc", "--cluster", "clu-1", "--owner-team", "payments-api-maintainers", "--observability", "provision"},
+		{"deploy", "template", "hiroba/service", "--name", "payments", "--owner-team", "payments-api-maintainers", "--observability", "provision"},
 	} {
 		out := setupAuthedContext(t, srv.URL)
 		root := NewRootCmd("dev", "none", "now", out, &bytes.Buffer{})
@@ -114,6 +121,11 @@ func TestDeployChartAndTemplateUseCommonPlan(t *testing.T) {
 		}
 		if !strings.Contains(out.String(), "blocked_external_gate") {
 			t.Fatalf("output = %q", out.String())
+		}
+		observability := submitted["observability"].(map[string]any)
+		target := observability["target"].(map[string]any)
+		if observability["mode"] != "provision" || target["id"] != "rt-mon" {
+			t.Fatalf("policy-default observability target was not submitted: %#v", observability)
 		}
 	}
 }
