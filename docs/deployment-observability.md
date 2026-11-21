@@ -8,7 +8,7 @@ inari deploy chart oci://ghcr.io/7k-hiroba/payments-api/charts/payments-api --so
 inari deploy template hiroba/payments-service --name payments-api
 ```
 
-The default is `--observability=skip`. Opt in with `--observability=provision`, an entitled `--observability-target`, provider-allowed folder/datasource/evaluation, and exact compatible pack flags when a policy default is not present. Provisioning requires an owning team for access verification. The server revalidates all grants, policies, versions, and digests on submit.
+The default is `--observability=skip`. Opt in with `--observability=provision`, an entitled `--observability-target`, provider-allowed folder/datasource/evaluation, and exact compatible pack flags when a policy default is not present. Provisioning requires an owning team for access verification. The server revalidates all grants, policies, versions, and digests on submit. Default/stable version selection remains server-authoritative (tenant pin, then latest stable); an explicit non-stable `--channel` selects the highest valid SemVer in that channel and validates against that version's schema before exact-pin preflight.
 
 For an existing instance:
 

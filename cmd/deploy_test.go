@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/7K-Inari/inari-api/gen/go/oas"
 	"github.com/7K-Inari/inari-cli/internal/auth"
 	"github.com/7K-Inari/inari-cli/internal/config"
 )
@@ -200,6 +201,22 @@ func TestDeployUnknownVersionFails(t *testing.T) {
 	}
 	if deployed {
 		t.Fatal("no deploy call must be made for an unknown version")
+	}
+}
+
+func TestLatestChannelVersionUsesSemVerOrdering(t *testing.T) {
+	versions := []oas.CatalogItemVersion{
+		{Version: "1.9.0", Channel: "incubating"},
+		{Version: "1.10.0", Channel: "incubating"},
+		{Version: "1.11.0", Channel: "stable"},
+		{Version: "not-semver", Channel: "incubating"},
+	}
+	got, err := latestChannelVersion(oas.ItemView{Versions: &versions}, "incubating")
+	if err != nil || got != "1.10.0" {
+		t.Fatalf("latestChannelVersion = %q, %v", got, err)
+	}
+	if _, err := latestChannelVersion(oas.ItemView{Versions: &versions}, "missing"); err == nil {
+		t.Fatal("unknown channel unexpectedly resolved")
 	}
 }
 

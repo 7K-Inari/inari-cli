@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/7K-Inari/inari-api/gen/go/oas"
+	"github.com/Masterminds/semver/v3"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
@@ -69,6 +70,12 @@ printed.`,
 			if err != nil {
 				return err
 			}
+			if version == "" && channel != "" && channel != "stable" {
+				version, err = latestChannelVersion(*item, channel)
+				if err != nil {
+					return err
+				}
+			}
 			rawSchema := pickSchema(*item, version)
 			if rawSchema == nil && version != "" {
 				return fmt.Errorf("version %q not found for item %q (see 'inari catalog describe %s')", version, args[0], args[0])
@@ -125,17 +132,6 @@ printed.`,
 				return printDecision(opts, rsp.JSON200.Decision)
 			}
 
-			if version == "" && channel != "" && item.Versions != nil {
-				for _, candidate := range *item.Versions {
-					if candidate.Channel == channel {
-						version = candidate.Version
-						break
-					}
-				}
-				if version == "" {
-					return fmt.Errorf("channel %q has no selectable version for %q", channel, itemID)
-				}
-			}
 			source := oas.Source{Kind: "catalog", ItemId: &itemID}
 			if version != "" {
 				source.Version = &version
@@ -206,6 +202,29 @@ func printDecision(opts *GlobalOptions, d oas.PolicyDecision) error {
 	printViolations("Violation", d.Violations)
 	printViolations("Warning", d.Warnings)
 	return nil
+}
+
+func latestChannelVersion(item oas.ItemView, channel string) (string, error) {
+	if item.Versions != nil {
+		var best *semver.Version
+		bestRaw := ""
+		for _, candidate := range *item.Versions {
+			if candidate.Channel != channel {
+				continue
+			}
+			parsed, err := semver.NewVersion(candidate.Version)
+			if err != nil {
+				continue
+			}
+			if best == nil || parsed.GreaterThan(best) {
+				best, bestRaw = parsed, candidate.Version
+			}
+		}
+		if bestRaw != "" {
+			return bestRaw, nil
+		}
+	}
+	return "", fmt.Errorf("channel %q has no valid selectable version", channel)
 }
 
 func pickSchema(item oas.ItemView, version string) any {
