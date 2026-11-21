@@ -67,6 +67,7 @@ Configuration lives in ~/.config/inari/ with kubectl-style contexts
 	root.AddCommand(newCatalogCmd(opts))
 	root.AddCommand(newDeployCmd(opts))
 	root.AddCommand(newResourcesCmd(opts))
+	root.AddCommand(newVerificationCmd(opts))
 	root.AddCommand(newGitCmd(opts))
 	root.AddCommand(newExtensionCmd(opts))
 
