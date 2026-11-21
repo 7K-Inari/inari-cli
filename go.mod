@@ -6,6 +6,7 @@ require (
 	github.com/7K-Inari/inari-api v0.8.0-b5e7e0b
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/spf13/cobra v1.10.2
+	golang.org/x/mod v0.41.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/client-go v0.37.2
 )

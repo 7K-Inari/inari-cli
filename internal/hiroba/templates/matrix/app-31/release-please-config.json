@@ -22,7 +22,8 @@
       "bump-patch-for-minor-pre-major": true,
       "extra-files": [
         "Chart.yaml"
-      ]
+      ],
+      "component": "chart-__HIROBA_NAME__"
     },
     "packages/__HIROBA_NAME__": {
       "release-type": "simple",
@@ -31,7 +32,8 @@
       "bump-patch-for-minor-pre-major": true,
       "extra-files": [
         "package.yaml"
-      ]
+      ],
+      "component": "package-__HIROBA_NAME__"
     },
     "templates/__HIROBA_NAME__": {
       "release-type": "simple",
@@ -40,7 +42,8 @@
       "bump-patch-for-minor-pre-major": true,
       "extra-files": [
         "template.yaml"
-      ]
+      ],
+      "component": "template-__HIROBA_NAME__"
     },
     "packages/observability-pack": {
       "release-type": "simple",
@@ -49,7 +52,8 @@
       "bump-patch-for-minor-pre-major": true,
       "extra-files": [
         "package.yaml"
-      ]
+      ],
+      "component": "package-observability-pack"
     },
     "ui": {
       "release-type": "node",

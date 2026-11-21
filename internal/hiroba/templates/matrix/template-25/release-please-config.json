@@ -22,7 +22,8 @@
       "bump-patch-for-minor-pre-major": true,
       "extra-files": [
         "template.yaml"
-      ]
+      ],
+      "component": "template-__HIROBA_NAME__"
     },
     "tests/smoke": {
       "release-type": "simple",
@@ -32,7 +33,7 @@
       "extra-files": [
         "suite.yaml"
       ],
-      "component": "__HIROBA_NAME__-smoke"
+      "component": "smoke-__HIROBA_NAME__-smoke"
     },
     "packages/observability-pack": {
       "release-type": "simple",
@@ -41,7 +42,8 @@
       "bump-patch-for-minor-pre-major": true,
       "extra-files": [
         "package.yaml"
-      ]
+      ],
+      "component": "package-observability-pack"
     }
   }
 }

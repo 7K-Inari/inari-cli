@@ -10,6 +10,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"golang.org/x/mod/module"
 )
 
 const (
@@ -19,7 +21,6 @@ const (
 
 var (
 	appNamePattern = regexp.MustCompile(`^[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$`)
-	modulePattern  = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._~/-]*$`)
 	shaPattern     = regexp.MustCompile(`^[0-9a-f]{40}$`)
 	versionPattern = regexp.MustCompile(`^v[0-9]+\.[0-9]+\.[0-9]+$`)
 	placeholderRe  = regexp.MustCompile(`__(?:HIROBA|WORKFLOWS)_[A-Z0-9_]*__`)
@@ -56,6 +57,9 @@ func normalizeOptions(opts Options) (Options, error) {
 	if !appNamePattern.MatchString(opts.Name) {
 		return opts, fmt.Errorf("invalid name %q: use a registry-compatible lowercase DNS label of at most 63 characters", opts.Name)
 	}
+	if opts.Name == "observability-pack" {
+		return opts, fmt.Errorf("invalid name %q: this ID is reserved for the canonical observability companion package", opts.Name)
+	}
 	switch opts.Type {
 	case "app", "extension", "catalog", "template":
 	default:
@@ -64,8 +68,8 @@ func normalizeOptions(opts Options) (Options, error) {
 	if opts.Module == "" {
 		opts.Module = "github.com/7K-Hiroba/" + opts.Name
 	}
-	if !modulePattern.MatchString(opts.Module) || strings.HasSuffix(opts.Module, "/") || strings.Contains(opts.Module, "//") || strings.Contains(opts.Module, "..") {
-		return opts, fmt.Errorf("invalid Go module path %q", opts.Module)
+	if err := module.CheckPath(opts.Module); err != nil {
+		return opts, fmt.Errorf("invalid Go module path %q: %w", opts.Module, err)
 	}
 	return opts, nil
 }
@@ -84,7 +88,23 @@ func matrixKey(opts Options) string {
 	return fmt.Sprintf("%s-%02d", opts.Type, optionMask(opts))
 }
 
+func putFile(files map[string]fileSpec, destination string, spec fileSpec, overwrite bool) error {
+	if _, exists := files[destination]; exists && !overwrite {
+		return fmt.Errorf("duplicate generated path %q", destination)
+	}
+	files[destination] = spec
+	return nil
+}
+
 func addTree(files map[string]fileSpec, root, destination string) error {
+	return addTreeMode(files, root, destination, false)
+}
+
+func overlayTree(files map[string]fileSpec, root, destination string) error {
+	return addTreeMode(files, root, destination, true)
+}
+
+func addTreeMode(files map[string]fileSpec, root, destination string, overwrite bool) error {
 	return fs.WalkDir(templatesFS, root, func(source string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -99,17 +119,16 @@ func addTree(files map[string]fileSpec, root, destination string) error {
 		if strings.HasSuffix(rel, ".sh") {
 			mode = 0o755
 		}
-		files[path.Join(destination, rel)] = fileSpec{source: source, mode: mode}
-		return nil
+		return putFile(files, path.Join(destination, rel), fileSpec{source: source, mode: mode}, overwrite)
 	})
 }
 
-func addFile(files map[string]fileSpec, source, destination string) {
-	files[destination] = fileSpec{source: source, mode: 0o644}
+func addFile(files map[string]fileSpec, source, destination string) error {
+	return putFile(files, destination, fileSpec{source: source, mode: 0o644}, false)
 }
 
-func addWorkflow(files map[string]fileSpec, name string) {
-	addFile(files, "templates/workflows/"+name+".yml.template", ".github/workflows/"+name+".yml")
+func addWorkflow(files map[string]fileSpec, name string) error {
+	return addFile(files, "templates/workflows/"+name+".yml.template", ".github/workflows/"+name+".yml")
 }
 
 func selectedFiles(opts Options) (map[string]fileSpec, error) {
@@ -127,7 +146,7 @@ func selectedFiles(opts Options) (map[string]fileSpec, error) {
 			return nil, err
 		}
 		if packageVariant == "no-chart" {
-			if err := addTree(files, "templates/components/package/no-chart", "packages/"+opts.Name); err != nil {
+			if err := overlayTree(files, "templates/components/package/no-chart", "packages/"+opts.Name); err != nil {
 				return nil, err
 			}
 		}
@@ -148,7 +167,9 @@ func selectedFiles(opts Options) (map[string]fileSpec, error) {
 		}
 	}
 	if effectivePlugin || opts.WithUI {
-		addFile(files, "templates/components/extension.yaml", "extension.yaml")
+		if err := addFile(files, "templates/components/extension.yaml", "extension.yaml"); err != nil {
+			return nil, err
+		}
 	}
 	if opts.WithChart {
 		chartVariant := "nonplugin"
@@ -170,10 +191,14 @@ func selectedFiles(opts Options) (map[string]fileSpec, error) {
 			return nil, err
 		}
 		if opts.Type == "app" || opts.Type == "catalog" {
-			addFile(files, "templates/components/observability/manifest/observability.yaml", "packages/"+opts.Name+"/observability.yaml")
+			if err := addFile(files, "templates/components/observability/manifest/observability.yaml", "packages/"+opts.Name+"/observability.yaml"); err != nil {
+				return nil, err
+			}
 		}
 		if opts.Type == "app" || opts.Type == "template" {
-			addFile(files, "templates/components/observability/manifest/observability.yaml", "templates/"+opts.Name+"/observability/observability.yaml")
+			if err := addFile(files, "templates/components/observability/manifest/observability.yaml", "templates/"+opts.Name+"/observability/observability.yaml"); err != nil {
+				return nil, err
+			}
 		}
 		if opts.WithChart {
 			if err := addTree(files, "templates/components/observability/chart", "charts/"+opts.Name); err != nil {
@@ -195,30 +220,46 @@ func selectedFiles(opts Options) (map[string]fileSpec, error) {
 	}
 
 	for _, name := range []string{"validate", "release-please", "release", "edge"} {
-		addWorkflow(files, name)
+		if err := addWorkflow(files, name); err != nil {
+			return nil, err
+		}
 	}
 	if opts.Type == "app" || opts.Type == "catalog" || opts.WithObservability {
-		addWorkflow(files, "test-packages")
+		if err := addWorkflow(files, "test-packages"); err != nil {
+			return nil, err
+		}
 	}
 	if effectivePlugin || opts.WithUI {
-		addWorkflow(files, "extension-ci")
-	}
-	if effectivePlugin && opts.WithUI {
+		if err := addWorkflow(files, "extension-ci"); err != nil {
+			return nil, err
+		}
 		if err := addTree(files, "templates/components/compat", ""); err != nil {
 			return nil, err
 		}
-		addWorkflow(files, "compat-pr")
-		addWorkflow(files, "compat-nightly")
+	}
+	if effectivePlugin && opts.WithUI {
+		for _, name := range []string{"compat-pr", "compat-nightly"} {
+			if err := addWorkflow(files, name); err != nil {
+				return nil, err
+			}
+		}
 	}
 	if opts.WithChart {
-		addWorkflow(files, "chart-ci")
-		addWorkflow(files, "chart-repair")
+		for _, name := range []string{"chart-ci", "chart-repair"} {
+			if err := addWorkflow(files, name); err != nil {
+				return nil, err
+			}
+		}
 	}
 	if opts.WithObservability {
-		addWorkflow(files, "observability")
+		if err := addWorkflow(files, "observability"); err != nil {
+			return nil, err
+		}
 	}
 	if opts.WithRuntimeSmoke {
-		addWorkflow(files, "runtime-smoke")
+		if err := addWorkflow(files, "runtime-smoke"); err != nil {
+			return nil, err
+		}
 	}
 
 	matrixRoot := "templates/matrix/" + matrixKey(opts)
@@ -269,8 +310,27 @@ func dynamicReplacements(opts Options) map[string]string {
 		}
 	}
 	compatibility := ""
-	if effectivePlugin && opts.WithUI {
+	if effectivePlugin || opts.WithUI {
 		compatibility = "compatibility:\n  matrix: ci/compatibility-matrix.json\n"
+	}
+	releaseComponents := ""
+	if opts.Type == "app" || opts.Type == "catalog" {
+		releaseComponents += "  packages/" + opts.Name + ": package-" + opts.Name + "\n"
+	}
+	if opts.Type == "app" || opts.Type == "template" {
+		releaseComponents += "  templates/" + opts.Name + ": template-" + opts.Name + "\n"
+	}
+	if opts.WithChart {
+		releaseComponents += "  charts/" + opts.Name + ": chart-" + opts.Name + "\n"
+	}
+	if opts.WithObservability {
+		releaseComponents += "  packages/observability-pack: package-observability-pack\n"
+	}
+	if opts.WithRuntimeSmoke && !opts.WithChart {
+		releaseComponents += "  tests/smoke: smoke-" + opts.Name + "-smoke\n"
+	}
+	if releaseComponents != "" {
+		releaseComponents = "releaseComponents:\n" + releaseComponents
 	}
 	kinds := "[backend]"
 	if !effectivePlugin && opts.WithUI {
@@ -299,6 +359,7 @@ func dynamicReplacements(opts Options) map[string]string {
 		"__HIROBA_PACKAGE_OBSERVABILITY__":  packageObservability,
 		"__HIROBA_SMOKE__":                  smoke,
 		"__HIROBA_COMPATIBILITY__":          compatibility,
+		"__HIROBA_RELEASE_COMPONENTS__":     releaseComponents,
 		"__HIROBA_EXTENSION_KINDS__":        kinds,
 		"__HIROBA_CHART_DEPENDENCIES__":     chartDependencies,
 		"__HIROBA_OBSERVABILITY_ENABLED__":  fmt.Sprintf("%t", opts.WithObservability),

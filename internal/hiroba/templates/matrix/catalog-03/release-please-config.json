@@ -22,7 +22,8 @@
       "bump-patch-for-minor-pre-major": true,
       "extra-files": [
         "package.yaml"
-      ]
+      ],
+      "component": "package-__HIROBA_NAME__"
     },
     "ui": {
       "release-type": "node",

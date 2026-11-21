@@ -20,8 +20,12 @@ jobs:
           set -euo pipefail
           [[ "$CHART" =~ ^[a-z0-9][a-z0-9-]*$ ]] || exit 2
           [[ "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?$ ]] || exit 2
-          TAG="$CHART-v$VERSION"
+          TAG="chart-$CHART-v$VERSION"
           sha=$(git -C consumer ls-remote origin "refs/tags/$TAG^{}" | awk 'NR == 1 {print $1}')
+          if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+            TAG="$CHART-v$VERSION"
+            sha=$(git -C consumer ls-remote origin "refs/tags/$TAG^{}" | awk 'NR == 1 {print $1}')
+          fi
           [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "repair requires an existing annotated tag $TAG" >&2; exit 2; }
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
   repair:

@@ -10,6 +10,8 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 type goldenFile struct {
@@ -121,6 +123,7 @@ func TestFullMatrixContentContracts(t *testing.T) {
 				t.Fatalf("%s mask %d: %v", kind, mask, err)
 			}
 			tree := readTree(t, target)
+			assertReleaseContract(t, opts, tree)
 			for path, file := range tree {
 				if strings.Contains(file.Content, "__WORKFLOWS_V1_SHA__") || strings.Contains(file.Content, "__HIROBA_NAME__") {
 					t.Errorf("%s mask %d %s contains an unresolved placeholder", kind, mask, path)
@@ -194,5 +197,124 @@ func TestFullMatrixContentContracts(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func assertReleaseContract(t *testing.T, opts Options, tree goldenTree) {
+	t.Helper()
+	var config struct {
+		ReleaseComponents map[string]string `yaml:"releaseComponents"`
+		Compatibility     *struct {
+			Matrix string `yaml:"matrix"`
+		} `yaml:"compatibility"`
+	}
+	if err := yaml.Unmarshal([]byte(tree[".hiroba.yaml"].Content), &config); err != nil {
+		t.Fatalf("parse generated app config: %v", err)
+	}
+	expected := map[string]string{}
+	if opts.Type == "app" || opts.Type == "catalog" {
+		expected["packages/"+opts.Name] = "package-" + opts.Name
+	}
+	if opts.Type == "app" || opts.Type == "template" {
+		expected["templates/"+opts.Name] = "template-" + opts.Name
+	}
+	if opts.WithChart {
+		expected["charts/"+opts.Name] = "chart-" + opts.Name
+	}
+	if opts.WithObservability {
+		expected["packages/observability-pack"] = "package-observability-pack"
+	}
+	if opts.WithRuntimeSmoke && !opts.WithChart {
+		expected["tests/smoke"] = "smoke-" + opts.Name + "-smoke"
+	}
+	if !reflect.DeepEqual(config.ReleaseComponents, expected) && (len(expected) > 0 || len(config.ReleaseComponents) > 0) {
+		t.Errorf("%s mask %d releaseComponents = %#v, want %#v", opts.Type, optionMask(opts), config.ReleaseComponents, expected)
+	}
+
+	var releasePlease struct {
+		Packages map[string]struct {
+			Component string `json:"component"`
+		} `json:"packages"`
+	}
+	if err := json.Unmarshal([]byte(tree["release-please-config.json"].Content), &releasePlease); err != nil {
+		t.Fatalf("parse release-please config: %v", err)
+	}
+	for path, identity := range expected {
+		component, ok := releasePlease.Packages[path]
+		if !ok {
+			t.Errorf("%s mask %d release-please omitted %s", opts.Type, optionMask(opts), path)
+			continue
+		}
+		if component.Component != identity {
+			t.Errorf("%s mask %d release-please component for %s = %q, want %q", opts.Type, optionMask(opts), path, component.Component, identity)
+		}
+	}
+
+	effectivePlugin := opts.WithPlugin || opts.Type == "extension"
+	if effectivePlugin || opts.WithUI {
+		if config.Compatibility == nil || config.Compatibility.Matrix != "ci/compatibility-matrix.json" {
+			t.Errorf("%s mask %d omitted compatibility declaration for independent extension components", opts.Type, optionMask(opts))
+		}
+		if _, ok := tree["ci/compatibility-matrix.json"]; !ok {
+			t.Errorf("%s mask %d omitted compatibility matrix", opts.Type, optionMask(opts))
+		}
+	} else {
+		if config.Compatibility != nil {
+			t.Errorf("%s mask %d unexpectedly declared compatibility", opts.Type, optionMask(opts))
+		}
+		if _, ok := tree["ci/compatibility-matrix.json"]; ok {
+			t.Errorf("%s mask %d unexpectedly emitted compatibility matrix", opts.Type, optionMask(opts))
+		}
+	}
+	if opts.WithChart {
+		repair := tree[".github/workflows/chart-repair.yml"].Content
+		for _, expected := range []string{`TAG="chart-$CHART-v$VERSION"`, `TAG="$CHART-v$VERSION"`} {
+			if !strings.Contains(repair, expected) {
+				t.Errorf("%s mask %d chart repair missing %q", opts.Type, optionMask(opts), expected)
+			}
+		}
+	}
+}
+
+func TestNormalizeOptionsRejectsReservedObservabilityPack(t *testing.T) {
+	_, err := normalizeOptions(Options{Name: "observability-pack", Type: "catalog", WithObservability: true})
+	if err == nil || !strings.Contains(err.Error(), "reserved") {
+		t.Fatalf("reserved observability-pack name error = %v", err)
+	}
+}
+
+func TestAddTreeRejectsDuplicateDestination(t *testing.T) {
+	files := map[string]fileSpec{}
+	if err := addTree(files, "templates/common", ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := addTree(files, "templates/common", ""); err == nil || !strings.Contains(err.Error(), "duplicate generated path") {
+		t.Fatalf("duplicate tree error = %v", err)
+	}
+}
+
+func TestNormalizeOptionsModulePaths(t *testing.T) {
+	for _, module := range []string{"", "github.com/7K-Hiroba/example", "example.com/foo/bar", "example.com/foo/v2"} {
+		t.Run("valid_"+module, func(t *testing.T) {
+			if _, err := normalizeOptions(Options{Name: "valid-name", Type: "extension", Module: module}); err != nil {
+				t.Fatalf("valid module %q rejected: %v", module, err)
+			}
+		})
+	}
+	for _, module := range []string{
+		"bad module",
+		"example.com/foo/./bar",
+		"example.com/.foo/bar",
+		"example.com/foo/bar.",
+		"example.com/foo//bar",
+		"example.com/foo/../bar",
+		"example.com/foo~1/bar",
+		"example.com/CON/bar",
+	} {
+		t.Run("invalid_"+module, func(t *testing.T) {
+			if _, err := normalizeOptions(Options{Name: "valid-name", Type: "extension", Module: module}); err == nil {
+				t.Fatalf("invalid module %q accepted", module)
+			}
+		})
 	}
 }

@@ -13,7 +13,8 @@
       "bump-patch-for-minor-pre-major": true,
       "extra-files": [
         "template.yaml"
-      ]
+      ],
+      "component": "template-__HIROBA_NAME__"
     }
   }
 }
