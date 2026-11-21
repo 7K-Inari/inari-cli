@@ -113,6 +113,25 @@ func normalizeObservability(flags deploymentPlanFlags, initial *oas.Preflight, r
 			}
 		}
 	}
+	if observability.Pack != nil {
+		requested := observability.Pack
+		matched := false
+		if initial.CompatiblePacks != nil {
+			for _, candidate := range *initial.CompatiblePacks {
+				if requested.ItemId == nil || candidate.ItemId == nil || *requested.ItemId != *candidate.ItemId ||
+					requested.Version != candidate.Version || requested.Digest != candidate.Digest {
+					continue
+				}
+				selected := candidate
+				observability.Pack = &selected
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return fmt.Errorf("requested pack is not an exact compatible preflight candidate")
+		}
+	}
 	if observability.Pack == nil && initial.Plan.Observability.Pack != nil {
 		observability.Pack = initial.Plan.Observability.Pack
 	}

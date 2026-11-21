@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/7K-Inari/inari-api/gen/go/oas"
 )
 
 func observabilityPlan(body map[string]any, state string) map[string]any {
@@ -103,6 +105,40 @@ func observabilityServerWithSubmit(t *testing.T, ready bool, onSubmit func(map[s
 		_ = json.NewEncoder(w).Encode(map[string]any{"observability": map[string]any{"mode": "provision", "available": true, "companion": companion}})
 	})
 	return httptest.NewServer(mux)
+}
+
+func TestNormalizeObservabilityUsesFullReviewedPackCandidate(t *testing.T) {
+	itemID := "hiroba/observability-pack"
+	sourceID := "hiroba"
+	ref := "ghcr.io/7k-hiroba/payments-api/catalog/observability-pack:0.2.0"
+	packageVersion := "0.2.0+signed"
+	candidate := oas.PackPin{
+		ItemId: &itemID, SourceId: &sourceID, Ref: &ref, PackageVersion: &packageVersion,
+		Version: "0.2.0", Digest: "sha256:pack", RenderContract: "inari.observability-pack/v2",
+	}
+	target := &oas.TargetIntent{Id: "rt-mon", Revision: 7, Selection: map[string]any{
+		"folder": "acme/payments-api", "datasource": "metrics-central", "evaluation": "central",
+	}}
+	packs := []oas.PackPin{candidate}
+	initial := &oas.Preflight{
+		Plan:            oas.Plan{Capability: &oas.ObservabilityCapability{}, Observability: oas.ObservabilityInput{Mode: "provision", Target: target}},
+		CompatiblePacks: &packs,
+	}
+	flags := deploymentPlanFlags{mode: "provision", packItemID: itemID, packVersion: candidate.Version, packDigest: candidate.Digest}
+	var request oas.PlanRequest
+	if err := normalizeObservability(flags, initial, &request); err != nil {
+		t.Fatal(err)
+	}
+	got := request.Observability.Pack
+	if got == nil || got.SourceId == nil || *got.SourceId != sourceID || got.Ref == nil || *got.Ref != ref || got.PackageVersion == nil || *got.PackageVersion != packageVersion {
+		t.Fatalf("explicit flags did not select the complete reviewed pack: %#v", got)
+	}
+
+	flags.packDigest = "sha256:different"
+	request = oas.PlanRequest{}
+	if err := normalizeObservability(flags, initial, &request); err == nil {
+		t.Fatal("an explicit pack outside the reviewed candidates was accepted")
+	}
 }
 
 func TestDeployChartAndTemplateUseCommonPlan(t *testing.T) {
