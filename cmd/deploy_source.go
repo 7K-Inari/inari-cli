@@ -26,7 +26,7 @@ func addSourceDeployFlags(cmd *cobra.Command, flags *sourceDeployFlags, clusterR
 	cmd.Flags().StringVar(&flags.ownerTeam, "owner-team", "", "Owning team for folder access")
 	cmd.Flags().StringVarP(&flags.file, "file", "f", "", "YAML values file")
 	cmd.Flags().StringArrayVar(&flags.sets, "set", nil, "Set a value key=value (repeatable)")
-	addDeploymentPlanFlags(cmd, &flags.observability)
+	addDeploymentPlanFlags(cmd, &flags.observability, "skip")
 }
 
 func sourceSpec(flags sourceDeployFlags) (map[string]any, error) {

@@ -40,7 +40,7 @@ func newExistingObservabilityPreflightCmd(opts *GlobalOptions) *cobra.Command {
 		}
 		return printPlan(opts, &preflight.Plan)
 	}}
-	addDeploymentPlanFlags(cmd, &flags)
+	addDeploymentPlanFlags(cmd, &flags, "provision")
 	return cmd
 }
 
@@ -70,7 +70,7 @@ func newExistingObservabilityProvisionCmd(opts *GlobalOptions) *cobra.Command {
 		}
 		return printPlan(opts, plan)
 	}}
-	addDeploymentPlanFlags(cmd, &flags)
+	addDeploymentPlanFlags(cmd, &flags, "provision")
 	return cmd
 }
 

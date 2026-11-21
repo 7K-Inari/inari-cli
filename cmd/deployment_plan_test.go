@@ -32,10 +32,21 @@ func observabilityPlan(body map[string]any, state string) map[string]any {
 		"planFingerprint": "sha256:plan", "state": state, "gate": map[string]any{"companionRendering": false, "deployedVerification": false},
 		"createdAt": "2026-11-15T21:42:00Z", "updatedAt": "2026-11-15T21:42:00Z",
 	}
+	if body["operation"] == "provisionExisting" {
+		plan["appInstanceId"] = "app-1"
+		deployment := plan["deployment"].(map[string]any)
+		deployment["ownerTeam"] = "payments-api-maintainers"
+		deployment["namespace"] = "payments"
+		if requested, ok := body["observability"].(map[string]any); ok {
+			plan["observability"] = requested
+		}
+	}
 	obs := plan["observability"].(map[string]any)
-	obs["pack"] = map[string]any{"itemId": "hiroba/observability-pack", "version": "0.2.0", "digest": "sha256:pack", "renderContract": "inari.observability-pack/v2"}
-	obs["target"] = map[string]any{"id": "rt-mon", "revision": 7, "selection": map[string]any{"folder": "acme-inc/payments-api", "datasource": "metrics-central", "evaluation": "central"}}
-	if state == "submitted" {
+	if obs["mode"] != "skip" {
+		obs["pack"] = map[string]any{"itemId": "hiroba/observability-pack", "version": "0.2.0", "digest": "sha256:pack", "renderContract": "inari.observability-pack/v2"}
+		obs["target"] = map[string]any{"id": "rt-mon", "revision": 7, "selection": map[string]any{"folder": "acme-inc/payments-api", "datasource": "metrics-central", "evaluation": "central"}}
+	}
+	if state == "submitted" && obs["mode"] != "skip" {
 		plan["appInstanceId"] = "app-1"
 		plan["companion"] = map[string]any{
 			"id": "oc-1", "planId": "dp-1", "appInstanceId": "app-1", "appRevision": "1.4.0@sha256:abc", "appSourceDigest": "sha256:abc", "capabilityDigest": "sha256:cap",
@@ -47,6 +58,11 @@ func observabilityPlan(body map[string]any, state string) map[string]any {
 }
 
 func observabilityServer(t *testing.T, ready bool) *httptest.Server {
+	t.Helper()
+	return observabilityServerWithSubmit(t, ready, nil)
+}
+
+func observabilityServerWithSubmit(t *testing.T, ready bool, onSubmit func(map[string]any)) *httptest.Server {
 	t.Helper()
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/tenants/acme/deployment-plans/preflight", func(w http.ResponseWriter, r *http.Request) {
@@ -62,6 +78,9 @@ func observabilityServer(t *testing.T, ready bool) *httptest.Server {
 	mux.HandleFunc("/api/v1/tenants/acme/deployment-plans", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
+		if onSubmit != nil {
+			onSubmit(body)
+		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{"plan": observabilityPlan(body, "submitted")})
 	})
@@ -96,6 +115,25 @@ func TestDeployChartAndTemplateUseCommonPlan(t *testing.T) {
 		if !strings.Contains(out.String(), "blocked_external_gate") {
 			t.Fatalf("output = %q", out.String())
 		}
+	}
+}
+
+func TestExistingObservabilityProvisionDefaultsToProvision(t *testing.T) {
+	var submitted map[string]any
+	srv := observabilityServerWithSubmit(t, false, func(body map[string]any) { submitted = body })
+	defer srv.Close()
+	out := setupAuthedContext(t, srv.URL)
+	root := NewRootCmd("dev", "none", "now", out, &bytes.Buffer{})
+	root.SetArgs([]string{"resources", "observability", "provision", "app-1"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	observability := submitted["observability"].(map[string]any)
+	if observability["mode"] != "provision" {
+		t.Fatalf("existing-instance provision submitted mode %q", observability["mode"])
+	}
+	if submitted["operation"] != "provisionExisting" || submitted["instanceId"] != "app-1" {
+		t.Fatalf("existing-instance submit body = %#v", submitted)
 	}
 }
 

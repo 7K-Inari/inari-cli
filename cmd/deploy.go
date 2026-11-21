@@ -174,7 +174,7 @@ printed.`,
 	c.Flags().StringVarP(&file, "file", "f", "", "YAML values file (non-interactive)")
 	c.Flags().StringArrayVar(&sets, "set", nil, "Set a value key=value, dot paths supported (repeatable)")
 	c.Flags().BoolVar(&dryRun, "dry-run", false, "Evaluate request-time policies without deploying")
-	addDeploymentPlanFlags(c, &observability)
+	addDeploymentPlanFlags(c, &observability, "skip")
 	c.AddCommand(newDeployChartCmd(opts), newDeployTemplateCmd(opts))
 	return c
 }

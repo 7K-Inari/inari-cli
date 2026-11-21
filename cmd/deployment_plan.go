@@ -21,8 +21,8 @@ type deploymentPlanFlags struct {
 	packDigest  string
 }
 
-func addDeploymentPlanFlags(cmd *cobra.Command, flags *deploymentPlanFlags) {
-	cmd.Flags().StringVar(&flags.mode, "observability", "skip", "Observability companion mode: skip|provision")
+func addDeploymentPlanFlags(cmd *cobra.Command, flags *deploymentPlanFlags, defaultMode string) {
+	cmd.Flags().StringVar(&flags.mode, "observability", defaultMode, "Observability companion mode: skip|provision")
 	cmd.Flags().StringVar(&flags.targetID, "observability-target", "", "Entitled monitoring resource-target ID")
 	cmd.Flags().StringVar(&flags.folder, "observability-folder", "", "Provider-allowed Grafana folder")
 	cmd.Flags().StringVar(&flags.datasource, "observability-datasource", "", "Provider-allowed datasource name")
