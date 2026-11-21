@@ -1,0 +1,28 @@
+// Package scaffold implements the public-SDK extension used by workflow tests.
+package scaffold
+
+import (
+	"context"
+
+	pluginsdk "github.com/7K-Inari/inari-plugin-sdk"
+)
+
+const (
+	Name    = "__HIROBA_NAME__"
+	Version = "0.1.0"
+)
+
+// New returns the extension with its single read-only action.
+func New() *pluginsdk.Plugin {
+	plugin := pluginsdk.New(pluginsdk.Info{Name: Name, Version: Version})
+	if err := plugin.RegisterAction(pluginsdk.Action{
+		Name:        "scaffold.ping",
+		Description: "Return a synthetic health response",
+		Handler: func(context.Context, *pluginsdk.Request) (*pluginsdk.Response, error) {
+			return &pluginsdk.Response{Result: []byte(`{"status":"ok"}`)}, nil
+		},
+	}); err != nil {
+		panic(err)
+	}
+	return plugin
+}

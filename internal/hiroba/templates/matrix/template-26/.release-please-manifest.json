@@ -1,0 +1,6 @@
+{
+  "packages/observability-pack": "0.1.0",
+  "templates/__HIROBA_NAME__": "0.1.0",
+  "tests/smoke": "0.1.0",
+  "ui": "0.1.0"
+}

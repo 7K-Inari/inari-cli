@@ -1,0 +1,7 @@
+name: validate
+on: {pull_request: {branches: [main]}, merge_group: {}}
+permissions: {contents: read}
+jobs:
+  validate:
+    uses: 7K-Hiroba/workflows/.github/workflows/validate-packages.yml@__WORKFLOWS_V1_SHA__ # __WORKFLOWS_VERSION__
+    with: {root: .}

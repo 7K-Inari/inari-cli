@@ -1,0 +1,4 @@
+{
+  "journey": "health-and-read-only-ping",
+  "expected": {"status": "ok"}
+}

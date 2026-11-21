@@ -1,0 +1,198 @@
+{
+  ".github/workflows/chart-ci.yml": {
+    "mode": 420,
+    "content": "name: chart CI\non: {pull_request: {branches: [main]}}\npermissions: {contents: read}\njobs:\n  chart:\n    uses: 7K-Hiroba/workflows/.github/workflows/ci-chart.yml@b26b53f5ba58a27d1973fec6dfa6469d0b93ba62 # v1.1.0\n    with: {root: .}\n"
+  },
+  ".github/workflows/chart-repair.yml": {
+    "mode": 420,
+    "content": "name: chart repair\non:\n  workflow_dispatch:\n    inputs:\n      chart: {required: true, type: string}\n      version: {required: true, type: string}\npermissions: {contents: read}\nconcurrency: {group: \"hiroba-release-${{ github.repository }}\", cancel-in-progress: false}\njobs:\n  resolve:\n    runs-on: ubuntu-latest\n    timeout-minutes: 5\n    outputs: {source-sha: \"${{ steps.source.outputs.sha }}\"}\n    steps:\n      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7\n        with: {path: consumer, fetch-depth: 0}\n      - id: source\n        env: {CHART: \"${{ inputs.chart }}\", VERSION: \"${{ inputs.version }}\"}\n        run: |\n          set -euo pipefail\n          [[ \"$CHART\" =~ ^[a-z0-9][a-z0-9-]*$ ]] || exit 2\n          [[ \"$VERSION\" =~ ^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?$ ]] || exit 2\n          TAG=\"$CHART-v$VERSION\"\n          sha=$(git -C consumer ls-remote origin \"refs/tags/$TAG^{}\" | awk 'NR == 1 {print $1}')\n          [[ \"$sha\" =~ ^[0-9a-f]{40}$ ]] || { echo \"repair requires an existing annotated tag $TAG\" \u003e\u00262; exit 2; }\n          echo \"sha=$sha\" \u003e\u003e \"$GITHUB_OUTPUT\"\n  repair:\n    needs: resolve\n    uses: 7K-Hiroba/workflows/.github/workflows/release-chart.yml@b26b53f5ba58a27d1973fec6dfa6469d0b93ba62 # v1.1.0\n    with:\n      root: .\n      chart: \"${{ inputs.chart }}\"\n      version: \"${{ inputs.version }}\"\n      source-sha: \"${{ needs.resolve.outputs.source-sha }}\"\n      repair: true\n      standalone: true\n    permissions: {contents: read, packages: write, id-token: write, attestations: write, actions: read, artifact-metadata: write}\n"
+  },
+  ".github/workflows/edge.yml": {
+    "mode": 420,
+    "content": "name: edge\non: {push: {branches: [main]}}\npermissions: {contents: read}\nconcurrency: {group: \"hiroba-release-${{ github.repository }}\", cancel-in-progress: false}\njobs:\n  edge:\n    uses: 7K-Hiroba/workflows/.github/workflows/edge.yml@b26b53f5ba58a27d1973fec6dfa6469d0b93ba62 # v1.1.0\n    with: {root: .}\n    permissions: {contents: write, packages: write, id-token: write, attestations: write, actions: read, artifact-metadata: write}\n"
+  },
+  ".github/workflows/release-please.yml": {
+    "mode": 420,
+    "content": "name: release-please\non: {push: {branches: [main]}}\npermissions: {contents: read}\njobs:\n  propose:\n    uses: 7K-Hiroba/workflows/.github/workflows/release-please.yml@b26b53f5ba58a27d1973fec6dfa6469d0b93ba62 # v1.1.0\n    with: {root: ., app-id: \"${{ vars.HIROBA_RELEASE_APP_ID }}\"}\n    secrets:\n      release-private-key: \"${{ secrets.HIROBA_RELEASE_PRIVATE_KEY }}\"\n    permissions: {contents: write, pull-requests: write}\n"
+  },
+  ".github/workflows/release.yml": {
+    "mode": 420,
+    "content": "name: release\non:\n  push: {branches: [main]}\n  workflow_dispatch:\n    inputs: {repair_tag: {required: false, type: string}}\npermissions: {contents: read}\nconcurrency: {group: \"hiroba-release-${{ github.repository }}\", cancel-in-progress: false}\njobs:\n  release:\n    uses: 7K-Hiroba/workflows/.github/workflows/release.yml@b26b53f5ba58a27d1973fec6dfa6469d0b93ba62 # v1.1.0\n    with: {root: ., repair_tag: \"${{ inputs.repair_tag }}\", app-id: \"${{ vars.HIROBA_RELEASE_APP_ID }}\"}\n    secrets:\n      release-private-key: \"${{ secrets.HIROBA_RELEASE_PRIVATE_KEY }}\"\n    permissions: {contents: write, packages: write, id-token: write, attestations: write, actions: read, artifact-metadata: write}\n"
+  },
+  ".github/workflows/runtime-smoke.yml": {
+    "mode": 420,
+    "content": "name: runtime smoke\non: {pull_request: {branches: [main]}}\npermissions: {contents: read}\njobs:\n  smoke:\n    uses: 7K-Hiroba/workflows/.github/workflows/test-runtime-smoke.yml@b26b53f5ba58a27d1973fec6dfa6469d0b93ba62 # v1.1.0\n    with: {root: ., mode: local, profile: ci}\n"
+  },
+  ".github/workflows/test-packages.yml": {
+    "mode": 420,
+    "content": "name: package tests\non: {pull_request: {branches: [main]}}\npermissions: {contents: read}\njobs:\n  test:\n    uses: 7K-Hiroba/workflows/.github/workflows/test-packages.yml@b26b53f5ba58a27d1973fec6dfa6469d0b93ba62 # v1.1.0\n    with: {root: .}\n"
+  },
+  ".github/workflows/validate.yml": {
+    "mode": 420,
+    "content": "name: validate\non: {pull_request: {branches: [main]}, merge_group: {}}\npermissions: {contents: read}\njobs:\n  validate:\n    uses: 7K-Hiroba/workflows/.github/workflows/validate-packages.yml@b26b53f5ba58a27d1973fec6dfa6469d0b93ba62 # v1.1.0\n    with: {root: .}\n"
+  },
+  ".gitignore": {
+    "mode": 420,
+    "content": "node_modules/\ndist/\nevidence/\ndiagnostics/\n*.log\n__pycache__/\n*.pyc\n"
+  },
+  ".hiroba.yaml": {
+    "mode": 420,
+    "content": "schema: inari.hiroba.app.v1\napp: matrix-app\ntrustTier: experimental\ncomponents:\n  chartsRoot: charts\n  packagesRoot: packages\n  templatesRoot: templates\nsmoke:\n  path: tests/smoke\n  targetComponent: charts/matrix-app\n"
+  },
+  ".release-please-manifest.json": {
+    "mode": 420,
+    "content": "{\n  \"charts/matrix-app\": \"0.1.0\",\n  \"packages/matrix-app\": \"0.1.0\",\n  \"templates/matrix-app\": \"0.1.0\"\n}\n"
+  },
+  "AGENTS.md": {
+    "mode": 420,
+    "content": "# Hiroba app agent guide\n\nUse Conventional Commits and independently versioned components. Keep canonical observability in observability/ and regenerate chart/pack outputs with the workflow library. All external actions and reusable workflows use full commit SHAs with version comments. Never add classic Helm indexes, UI Release assets, mutable release callers, or real-environment smoke execution. Use only public Inari SDK contracts.\n"
+  },
+  "CONTRIBUTING.md": {
+    "mode": 420,
+    "content": "# Contributing\n\nOpen a pull request with Conventional Commits. All applicable workflow lanes must pass, including negative generated-output checks. Do not commit secrets, customer data, generated diagnostics, or registry credentials.\n\nRead the [Hiroba governance](https://github.com/7K-Hiroba/community/blob/main/GOVERNANCE.md), [onboarding checklist](https://github.com/7K-Hiroba/community/blob/main/docs/governance/onboarding.md), and [trust-tier policy](https://github.com/7K-Hiroba/community/blob/main/docs/governance/trust-tiers.md). External contributions are currently paused while CLA coverage is reviewed; do not merge an external PR until the organization enables that process. Visit the [Hiroba organization profile](https://github.com/7K-Hiroba) for community context.\n"
+  },
+  "LICENSE": {
+    "mode": 420,
+    "content": "                                 Apache License\n                           Version 2.0, January 2004\n                        http://www.apache.org/licenses/\n\n   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION\n\n   1. Definitions.\n\n      \"License\" shall mean the terms and conditions for use, reproduction,\n      and distribution as defined by Sections 1 through 9 of this document.\n\n      \"Licensor\" shall mean the copyright owner or entity authorized by\n      the copyright owner that is granting the License.\n\n      \"Legal Entity\" shall mean the union of the acting entity and all\n      other entities that control, are controlled by, or are under common\n      control with that entity. For the purposes of this definition,\n      \"control\" means (i) the power, direct or indirect, to cause the\n      direction or management of such entity, whether by contract or\n      otherwise, or (ii) ownership of fifty percent (50%) or more of the\n      outstanding shares, or (iii) beneficial ownership of such entity.\n\n      \"You\" (or \"Your\") shall mean an individual or Legal Entity\n      exercising permissions granted by this License.\n\n      \"Source\" form shall mean the preferred form for making modifications,\n      including but not limited to software source code, documentation\n      source, and configuration files.\n\n      \"Object\" form shall mean any form resulting from mechanical\n      transformation or translation of a Source form, including but\n      not limited to compiled object code, generated documentation,\n      and conversions to other media types.\n\n      \"Work\" shall mean the work of authorship, whether in Source or\n      Object form, made available under the License, as indicated by a\n      copyright notice that is included in or attached to the work\n      (an example is provided in the Appendix below).\n\n      \"Derivative Works\" shall mean any work, whether in Source or Object\n      form, that is based on (or derived from) the Work and for which the\n      editorial revisions, annotations, elaborations, or other modifications\n      represent, as a whole, an original work of authorship. For the purposes\n      of this License, Derivative Works shall not include works that remain\n      separable from, or merely link (or bind by name) to the interfaces of,\n      the Work and Derivative Works thereof.\n\n      \"Contribution\" shall mean any work of authorship, including\n      the original version of the Work and any modifications or additions\n      to that Work or Derivative Works thereof, that is intentionally\n      submitted to Licensor for inclusion in the Work by the copyright owner\n      or by an individual or Legal Entity authorized to submit on behalf of\n      the copyright owner. For the purposes of this definition, \"submitted\"\n      means any form of electronic, verbal, or written communication sent\n      to the Licensor or its representatives, including but not limited to\n      communication on electronic mailing lists, source code control systems,\n      and issue tracking systems that are managed by, or on behalf of, the\n      Licensor for the purpose of discussing and improving the Work, but\n      excluding communication that is conspicuously marked or otherwise\n      designated in writing by the copyright owner as \"Not a Contribution.\"\n\n      \"Contributor\" shall mean Licensor and any individual or Legal Entity\n      on behalf of whom a Contribution has been received by Licensor and\n      subsequently incorporated within the Work.\n\n   2. Grant of Copyright License. Subject to the terms and conditions of\n      this License, each Contributor hereby grants to You a perpetual,\n      worldwide, non-exclusive, no-charge, royalty-free, irrevocable\n      copyright license to reproduce, prepare Derivative Works of,\n      publicly display, publicly perform, sublicense, and distribute the\n      Work and such Derivative Works in Source or Object form.\n\n   3. Grant of Patent License. Subject to the terms and conditions of\n      this License, each Contributor hereby grants to You a perpetual,\n      worldwide, non-exclusive, no-charge, royalty-free, irrevocable\n      (except as stated in this section) patent license to make, have made,\n      use, offer to sell, sell, import, and otherwise transfer the Work,\n      where such license applies only to those patent claims licensable\n      by such Contributor that are necessarily infringed by their\n      Contribution(s) alone or by combination of their Contribution(s)\n      with the Work to which such Contribution(s) was submitted. If You\n      institute patent litigation against any entity (including a\n      cross-claim or counterclaim in a lawsuit) alleging that the Work\n      or a Contribution incorporated within the Work constitutes direct\n      or contributory patent infringement, then any patent licenses\n      granted to You under this License for that Work shall terminate\n      as of the date such litigation is filed.\n\n   4. Redistribution. You may reproduce and distribute copies of the\n      Work or Derivative Works thereof in any medium, with or without\n      modifications, and in Source or Object form, provided that You\n      meet the following conditions:\n\n      (a) You must give any other recipients of the Work or\n          Derivative Works a copy of this License; and\n\n      (b) You must cause any modified files to carry prominent notices\n          stating that You changed the files; and\n\n      (c) You must retain, in the Source form of any Derivative Works\n          that You distribute, all copyright, patent, trademark, and\n          attribution notices from the Source form of the Work,\n          excluding those notices that do not pertain to any part of\n          the Derivative Works; and\n\n      (d) If the Work includes a \"NOTICE\" text file as part of its\n          distribution, then any Derivative Works that You distribute must\n          include a readable copy of the attribution notices contained\n          within such NOTICE file, excluding those notices that do not\n          pertain to any part of the Derivative Works, in at least one\n          of the following places: within a NOTICE text file distributed\n          as part of the Derivative Works; within the Source form or\n          documentation, if provided along with the Derivative Works; or,\n          within a display generated by the Derivative Works, if and\n          wherever such third-party notices normally appear. The contents\n          of the NOTICE file are for informational purposes only and\n          do not modify the License. You may add Your own attribution\n          notices within Derivative Works that You distribute, alongside\n          or as an addendum to the NOTICE text from the Work, provided\n          that such additional attribution notices cannot be construed\n          as modifying the License.\n\n      You may add Your own copyright statement to Your modifications and\n      may provide additional or different license terms and conditions\n      for use, reproduction, or distribution of Your modifications, or\n      for any such Derivative Works as a whole, provided Your use,\n      reproduction, and distribution of the Work otherwise complies with\n      the conditions stated in this License.\n\n   5. Submission of Contributions. Unless You explicitly state otherwise,\n      any Contribution intentionally submitted for inclusion in the Work\n      by You to the Licensor shall be under the terms and conditions of\n      this License, without any additional terms or conditions.\n      Notwithstanding the above, nothing herein shall supersede or modify\n      the terms of any separate license agreement you may have executed\n      with Licensor regarding such Contributions.\n\n   6. Trademarks. This License does not grant permission to use the trade\n      names, trademarks, service marks, or product names of the Licensor,\n      except as required for reasonable and customary use in describing the\n      origin of the Work and reproducing the content of the NOTICE file.\n\n   7. Disclaimer of Warranty. Unless required by applicable law or\n      agreed to in writing, Licensor provides the Work (and each\n      Contributor provides its Contributions) on an \"AS IS\" BASIS,\n      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or\n      implied, including, without limitation, any warranties or conditions\n      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A\n      PARTICULAR PURPOSE. You are solely responsible for determining the\n      appropriateness of using or redistributing the Work and assume any\n      risks associated with Your exercise of permissions under this License.\n\n   8. Limitation of Liability. In no event and under no legal theory,\n      whether in tort (including negligence), contract, or otherwise,\n      unless required by applicable law (such as deliberate and grossly\n      negligent acts) or agreed to in writing, shall any Contributor be\n      liable to You for damages, including any direct, indirect, special,\n      incidental, or consequential damages of any character arising as a\n      result of this License or out of the use or inability to use the\n      Work (including but not limited to damages for loss of goodwill,\n      work stoppage, computer failure or malfunction, or any and all\n      other commercial damages or losses), even if such Contributor\n      has been advised of the possibility of such damages.\n\n   9. Accepting Warranty or Additional Liability. While redistributing\n      the Work or Derivative Works thereof, You may choose to offer,\n      and charge a fee for, acceptance of support, warranty, indemnity,\n      or other liability obligations and/or rights consistent with this\n      License. However, in accepting such obligations, You may act only\n      on Your own behalf and on Your sole responsibility, not on behalf\n      of any other Contributor, and only if You agree to indemnify,\n      defend, and hold each Contributor harmless for any liability\n      incurred by, or claims asserted against, such Contributor by reason\n      of your accepting any such warranty or additional liability.\n\n   END OF TERMS AND CONDITIONS\n\n   APPENDIX: How to apply the Apache License to your work.\n\n      To apply the Apache License to your work, attach the following\n      boilerplate notice, with the fields enclosed by brackets \"[]\"\n      replaced with your own identifying information. (Don't include\n      the brackets!)  The text should be enclosed in the appropriate\n      comment syntax for the file format. We also recommend that a\n      file or class name and description of purpose be included on the\n      same \"printed page\" as the copyright notice for easier\n      identification within third-party archives.\n\n   Copyright [yyyy] [name of copyright owner]\n\n   Licensed under the Apache License, Version 2.0 (the \"License\");\n   you may not use this file except in compliance with the License.\n   You may obtain a copy of the License at\n\n       http://www.apache.org/licenses/LICENSE-2.0\n\n   Unless required by applicable law or agreed to in writing, software\n   distributed under the License is distributed on an \"AS IS\" BASIS,\n   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n   See the License for the specific language governing permissions and\n   limitations under the License.\n"
+  },
+  "README.md": {
+    "mode": 420,
+    "content": "# matrix-app\n\nThis is an experimental Hiroba community application repository generated by `inari hiroba init`. It uses the one-repository-per-application layout, independently versioned OCI artifacts, immutable workflow callers, and the public Inari SDK contracts.\n\n## Before onboarding\n\nReserve the permanent app ID in [`7K-Hiroba/community`](https://github.com/7K-Hiroba/community/blob/main/registry/apps.json), create the owning maintainer team, and complete [application onboarding](https://github.com/7K-Hiroba/community/blob/main/docs/governance/onboarding.md). The generated sources do not claim that a repository, team, release, or trusted source already exists.\n\nAfter the package is published and its trusted source is configured, deploy it with its canonical source-qualified identity:\n\n~~~sh\ninari deploy \u003csource\u003e/matrix-app --cluster \u003ccluster-id\u003e --file values.yaml\n~~~\n\nShort package names are local/display names only. Use the canonical `\u003csource\u003e/\u003cpackage\u003e` form when names collide.\n\n## Development\n\nKeep `package.yaml`/`template.yaml`, values schemas, canonical observability assets, generated chart/pack output, indexes, and release metadata synchronized. Run the repository's immutable PR callers and regeneration checks before submitting changes. Chartless observability still publishes the companion pack; chart-native output is optional. Fixture-only smoke suites are CI-only and are not application evidence.\n\nThe optional UI uses the stable `@7k-inari/ui-plugin-sdk@0.1.8` registry release and canonical `inari-ui-ext build`; no clone, postinstall, custom-webpack, or `@7k-hiroba` npm scope is used.\n"
+  },
+  "SECURITY.md": {
+    "mode": 420,
+    "content": "# Security\n\nReport vulnerabilities privately to the 7K-Hiroba security maintainers. This scaffold is CI-only and must never be deployed to production. Reviewed artifacts require valid cosign signatures, SLSA provenance, and current signed test evidence.\n"
+  },
+  "catalog.yaml": {
+    "mode": 420,
+    "content": "# GENERATED by scripts/build-indexes.py; do not edit.\napiVersion: inari.dev/v1alpha1\nkind: CatalogIndex\npackages:\n- name: matrix-app\n  version: 0.1.0\n  channel: incubating\n  type: platform-app\n  description: First-party chart package used by the workflow scaffold\n  category: test\n  ociRef: ghcr.io/7k-hiroba/matrix-app/catalog/matrix-app:0.1.0\n  channelRef: ghcr.io/7k-hiroba/matrix-app/catalog/matrix-app:incubating\n  observability:\n    package: observability-pack\n    versionRange: '\u003e=0.1.0 \u003c2.0.0'\n"
+  },
+  "charts/matrix-app/Chart.yaml": {
+    "mode": 420,
+    "content": "apiVersion: v2\nname: matrix-app\ndescription: CI-only Hiroba extension and runtime-smoke fixture\ntype: application\nversion: 0.1.0\nappVersion: \"0.1.0\"\n"
+  },
+  "charts/matrix-app/README.md": {
+    "mode": 420,
+    "content": "# matrix-app chart\n\nCI-only non-root Helm fixture. Releases use OCI at `oci://ghcr.io/7k-hiroba/matrix-app/charts`; no classic Helm index exists. Inari-managed deployments disable chart-native observability when a companion pack is selected.\n"
+  },
+  "charts/matrix-app/ci/kind-values.yaml": {
+    "mode": 420,
+    "content": "observability:\n  enabled: false\n  rules:\n    enabled: false\n"
+  },
+  "charts/matrix-app/ci/test.yaml": {
+    "mode": 420,
+    "content": "schema: inari.chart-test.v1\ndependencies: []\ninstall:\n  timeout: 5m\n  values:\n    - charts/matrix-app/ci/kind-values.yaml\n"
+  },
+  "charts/matrix-app/templates/_helpers.tpl": {
+    "mode": 420,
+    "content": "{{- define \"matrix-app.fullname\" -}}\n{{ .Release.Name }}\n{{- end }}\n{{- define \"matrix-app.labels\" -}}\napp.kubernetes.io/name: matrix-app\napp.kubernetes.io/instance: {{ .Release.Name }}\napp.kubernetes.io/version: {{ .Chart.AppVersion | quote }}\n{{- end }}\n"
+  },
+  "charts/matrix-app/templates/deployment.yaml": {
+    "mode": 420,
+    "content": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: {{ include \"matrix-app.fullname\" . }}\n  labels: {{ include \"matrix-app.labels\" . | nindent 4 }}\nspec:\n  replicas: {{ .Values.replicaCount }}\n  selector:\n    matchLabels:\n      app.kubernetes.io/name: matrix-app\n      app.kubernetes.io/instance: {{ .Release.Name }}\n  template:\n    metadata:\n      labels: {{ include \"matrix-app.labels\" . | nindent 8 }}\n    spec:\n      automountServiceAccountToken: false\n      securityContext:\n        runAsNonRoot: true\n        runAsUser: 101\n        runAsGroup: 101\n        fsGroup: 101\n        seccompProfile: {type: RuntimeDefault}\n      containers:\n        - name: app\n{{ if .Values.image.digest }}\n          image: \"{{ .Values.image.repository }}@{{ .Values.image.digest }}\"\n{{ else }}\n          image: \"{{ .Values.image.repository }}:{{ .Values.image.tag }}\"\n{{ end }}\n          imagePullPolicy: {{ .Values.image.pullPolicy }}\n          ports:\n            - {name: http, containerPort: 8080}\n          securityContext:\n            allowPrivilegeEscalation: false\n            readOnlyRootFilesystem: true\n            capabilities: {drop: [ALL]}\n          readinessProbe:\n            httpGet: {path: /, port: http}\n            periodSeconds: 2\n            failureThreshold: 15\n          livenessProbe:\n            httpGet: {path: /, port: http}\n            periodSeconds: 10\n          resources: {{ .Values.resources | toYaml | nindent 12 }}\n          volumeMounts:\n            - {name: nginx-cache, mountPath: /var/cache/nginx}\n            - {name: nginx-run, mountPath: /var/run}\n            - {name: nginx-tmp, mountPath: /tmp}\n      volumes:\n        - {name: nginx-cache, emptyDir: {}}\n        - {name: nginx-run, emptyDir: {}}\n        - {name: nginx-tmp, emptyDir: {}}\n"
+  },
+  "charts/matrix-app/templates/service.yaml": {
+    "mode": 420,
+    "content": "apiVersion: v1\nkind: Service\nmetadata:\n  name: {{ include \"matrix-app.fullname\" . }}\n  labels: {{ include \"matrix-app.labels\" . | nindent 4 }}\nspec:\n  type: {{ .Values.service.type }}\n  selector:\n    app.kubernetes.io/name: matrix-app\n    app.kubernetes.io/instance: {{ .Release.Name }}\n  ports:\n    - name: http\n      port: {{ .Values.service.port }}\n      targetPort: http\n"
+  },
+  "charts/matrix-app/values.schema.json": {
+    "mode": 420,
+    "content": "{\n  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"replicaCount\": {\"type\": \"integer\", \"minimum\": 1},\n    \"image\": {\n      \"type\": \"object\",\n      \"required\": [\"repository\", \"tag\", \"pullPolicy\"],\n      \"properties\": {\n        \"repository\": {\"type\": \"string\"},\n        \"tag\": {\"type\": \"string\", \"not\": {\"const\": \"latest\"}},\n        \"digest\": {\"type\": \"string\", \"pattern\": \"^(|sha256:[0-9a-f]{64})$\"},\n        \"pullPolicy\": {\"enum\": [\"Always\", \"IfNotPresent\", \"Never\"]}\n      }\n    },\n    \"service\": {\"type\": \"object\", \"properties\": {\"type\": {\"type\": \"string\"}, \"port\": {\"type\": \"integer\", \"minimum\": 1, \"maximum\": 65535}}},\n    \"observability\": {\"type\": \"object\", \"properties\": {\"enabled\": {\"type\": \"boolean\"}, \"rules\": {\"type\": \"object\", \"properties\": {\"enabled\": {\"type\": \"boolean\"}}}}},\n    \"resources\": {\"type\": \"object\"}\n  }\n}\n"
+  },
+  "charts/matrix-app/values.yaml": {
+    "mode": 420,
+    "content": "replicaCount: 1\nimage:\n  repository: nginxinc/nginx-unprivileged\n  tag: \"1.29.4\"\n  digest: \"sha256:c38007e929d1d368ea26df1b696bfc5655e274db11f755fad63c25950a157423\"\n  pullPolicy: IfNotPresent\nservice:\n  type: ClusterIP\n  port: 8080\nobservability:\n  enabled: false\n  rules:\n    enabled: false\nresources:\n  requests:\n    cpu: 25m\n    memory: 32Mi\n  limits:\n    cpu: 200m\n    memory: 128Mi\n"
+  },
+  "ci/chart_schema.yaml": {
+    "mode": 420,
+    "content": "name: str()\nhome: str(required=False)\nversion: str()\napiVersion: str()\nappVersion: any(str(), num(), required=False)\ndescription: str(required=False)\nkeywords: list(str(), required=False)\nsources: list(str(), required=False)\nmaintainers: list(include('maintainer'), required=False)\ndependencies: list(include('dependency'), required=False)\nicon: str(required=False)\nengine: str(required=False)\ncondition: str(required=False)\ntags: str(required=False)\ndeprecated: bool(required=False)\nkubeVersion: str(required=False)\nannotations: map(str(), str(), required=False)\ntype: str(required=False)\n---\nmaintainer:\n  name: str()\n  email: str(required=False)\n  url: str(required=False)\n---\ndependency:\n  name: str()\n  version: str()\n  repository: str(required=False)\n  condition: str(required=False)\n  tags: list(str(), required=False)\n  enabled: bool(required=False)\n  import-values: list(any(str(), include('import-value')), required=False)\n  alias: str(required=False)\n---\nimport-value:\n  child: str()\n  parent: str()\n"
+  },
+  "ci/ct.yaml": {
+    "mode": 420,
+    "content": "chart-dirs:\n  - charts\nvalidate-maintainers: false\ncheck-version-increment: false\n"
+  },
+  "ci/lintconf.yaml": {
+    "mode": 420,
+    "content": "---\nrules:\n  braces:\n    min-spaces-inside: 0\n    max-spaces-inside: 0\n    min-spaces-inside-empty: -1\n    max-spaces-inside-empty: -1\n  brackets:\n    min-spaces-inside: 0\n    max-spaces-inside: 0\n    min-spaces-inside-empty: -1\n    max-spaces-inside-empty: -1\n  colons:\n    max-spaces-before: 0\n    max-spaces-after: 1\n  commas:\n    max-spaces-before: 0\n    min-spaces-after: 1\n    max-spaces-after: 1\n  comments:\n    require-starting-space: true\n    min-spaces-from-content: 2\n  document-end: disable\n  document-start: disable\n  empty-lines:\n    max: 2\n    max-start: 0\n    max-end: 0\n  hyphens:\n    max-spaces-after: 1\n  indentation:\n    spaces: consistent\n    indent-sequences: whatever\n    check-multi-line-strings: false\n  key-duplicates: enable\n  line-length: disable\n  new-line-at-end-of-file: enable\n  new-lines:\n    type: unix\n  trailing-spaces: enable\n  truthy:\n    level: warning\n"
+  },
+  "packages/matrix-app/README.md": {
+    "mode": 420,
+    "content": "# app package\n\nPlatform-app fixture for the first-party OCI chart. Values are schema-validated and chart-native observability is disabled for companion-managed deployments.\n"
+  },
+  "packages/matrix-app/chart.yaml": {
+    "mode": 420,
+    "content": "repoURL: oci://ghcr.io/7k-hiroba/matrix-app/charts\nchart: matrix-app\nnamespace: matrix-app\nchannels:\n  incubating: 0.1.0\n  stable: 0.1.0\n"
+  },
+  "packages/matrix-app/package.yaml": {
+    "mode": 420,
+    "content": "version: 0.1.0\nchannel: incubating\ntype: platform-app\ndescription: First-party chart package used by the workflow scaffold\ncategory: test\nobservability:\n  package: observability-pack\n  versionRange: \"\u003e=0.1.0 \u003c2.0.0\"\n"
+  },
+  "packages/matrix-app/tests/run.sh": {
+    "mode": 493,
+    "content": "#!/usr/bin/env bash\nset -euo pipefail\nPACKAGE_DIR=$(cd \"$(dirname \"$0\")/..\" \u0026\u0026 pwd)\nROOT=$(cd \"$PACKAGE_DIR/../..\" \u0026\u0026 pwd)\nCHART=${CHART_DIR:-$ROOT/charts/matrix-app}\nRENDERED=$(mktemp)\ntrap 'rm -f \"$RENDERED\"' EXIT\nhelm template matrix-app \"$CHART\" --namespace matrix-app --values \"$PACKAGE_DIR/values-defaults.yaml\" \u003e \"$RENDERED\"\ngrep -q 'kind: Deployment' \"$RENDERED\"\ngrep -q 'kind: Service' \"$RENDERED\"\ngrep -q 'runAsNonRoot: true' \"$RENDERED\"\n"
+  },
+  "packages/matrix-app/ui-hints.yaml": {
+    "mode": 420,
+    "content": "fields:\n  replicaCount:\n    title: Replicas\n    description: Number of synthetic extension replicas\n"
+  },
+  "packages/matrix-app/values-defaults.yaml": {
+    "mode": 420,
+    "content": "replicaCount: 1\nobservability:\n  enabled: false\n  rules:\n    enabled: false\n"
+  },
+  "packages/matrix-app/values.schema.json": {
+    "mode": 420,
+    "content": "{\n  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"replicaCount\": {\"type\": \"integer\", \"minimum\": 1},\n    \"observability\": {\"type\": \"object\"}\n  }\n}\n"
+  },
+  "release-please-config.json": {
+    "mode": 420,
+    "content": "{\n  \"$schema\": \"https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json\",\n  \"separate-pull-requests\": false,\n  \"include-component-in-tag\": true,\n  \"include-v-in-tag\": true,\n  \"tag-separator\": \"-v\",\n  \"pull-request-title-pattern\": \"chore: release ${component} ${version}\",\n  \"packages\": {\n    \"charts/matrix-app\": {\n      \"release-type\": \"simple\",\n      \"changelog-path\": \"CHANGELOG.md\",\n      \"bump-minor-pre-major\": true,\n      \"bump-patch-for-minor-pre-major\": true,\n      \"extra-files\": [\n        \"Chart.yaml\"\n      ]\n    },\n    \"packages/matrix-app\": {\n      \"release-type\": \"simple\",\n      \"changelog-path\": \"CHANGELOG.md\",\n      \"bump-minor-pre-major\": true,\n      \"bump-patch-for-minor-pre-major\": true,\n      \"extra-files\": [\n        \"package.yaml\"\n      ]\n    },\n    \"templates/matrix-app\": {\n      \"release-type\": \"simple\",\n      \"changelog-path\": \"CHANGELOG.md\",\n      \"bump-minor-pre-major\": true,\n      \"bump-patch-for-minor-pre-major\": true,\n      \"extra-files\": [\n        \"template.yaml\"\n      ]\n    }\n  }\n}\n"
+  },
+  "renovate.json": {
+    "mode": 420,
+    "content": "{\n  \"$schema\": \"https://docs.renovatebot.com/renovate-schema.json\",\n  \"extends\": [\"config:recommended\"],\n  \"pinDigests\": true,\n  \"packageRules\": [\n    {\n      \"description\": \"Review trusted workflow SHAs and action updates manually\",\n      \"matchManagers\": [\"github-actions\"],\n      \"automerge\": false\n    },\n    {\n      \"description\": \"Group reviewed non-major SDK and chart dependency updates\",\n      \"matchUpdateTypes\": [\"minor\", \"patch\", \"digest\", \"pinDigest\"],\n      \"groupName\": \"non-major dependencies\",\n      \"automerge\": false\n    }\n  ]\n}\n"
+  },
+  "templates.yaml": {
+    "mode": 420,
+    "content": "# GENERATED by scripts/build-indexes.py; do not edit.\napiVersion: inari.dev/v1alpha1\nkind: TemplateIndex\ntemplates:\n- name: matrix-app\n  version: 0.1.0\n  channel: incubating\n  description: Minimal component scaffold for matrix-app\n  kind: component\n  ociRef: ghcr.io/7k-hiroba/matrix-app/templates/matrix-app:0.1.0\n  channelRef: ghcr.io/7k-hiroba/matrix-app/templates/matrix-app:incubating\n"
+  },
+  "templates/matrix-app/README.md": {
+    "mode": 420,
+    "content": "# matrix-app template\n\nA minimal OCI scaffold-template fixture. It does not provision observability or runtime resources at scaffold time.\n"
+  },
+  "templates/matrix-app/schema.json": {
+    "mode": 420,
+    "content": "{\n  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n  \"type\": \"object\",\n  \"required\": [\"name\"],\n  \"properties\": {\n    \"name\": {\"type\": \"string\", \"pattern\": \"^[a-z0-9][a-z0-9-]*$\"}\n  }\n}\n"
+  },
+  "templates/matrix-app/skeleton/README.md": {
+    "mode": 420,
+    "content": "# ${name}\n\nGenerated from the matrix-app service template.\n"
+  },
+  "templates/matrix-app/template.yaml": {
+    "mode": 420,
+    "content": "name: matrix-app\nversion: 0.1.0\nchannel: incubating\ndescription: Minimal component scaffold for matrix-app\nkind: component\n"
+  },
+  "templates/matrix-app/uiSchema.json": {
+    "mode": 420,
+    "content": "{\n  \"name\": {\"ui:help\": \"DNS-compatible component name\"}\n}\n"
+  },
+  "tests/smoke/README.md": {
+    "mode": 420,
+    "content": "# Runtime smoke\n\nThis artifact-bound suite deploys the actual `charts/matrix-app` chart through the explicit `helm` adapter and asserts the non-plugin HTTP workload through Argo Workflows. No extension component or extension Docker build is required.\n\nOnly the local `ci` profile executes in this repository. Stage/prod declarations require the separately gated environment verifier and exact approved application/suite digests.\n"
+  },
+  "tests/smoke/fixtures/input.json": {
+    "mode": 420,
+    "content": "{\n  \"journey\": \"health-and-read-only-ping\",\n  \"expected\": {\"status\": \"ok\"}\n}\n"
+  },
+  "tests/smoke/suite.yaml": {
+    "mode": 420,
+    "content": "suiteSchema: inari.smoke.v1\ntarget:\n  id: matrix-app\n  version: 0.1.0\n  component: charts/matrix-app\n  adapter:\n    kind: helm\n    fixtureOnly: false\n    readiness:\n      - {kind: Deployment, name: matrix-app, namespace: default, condition: Available}\nexecutableProfiles: [ci, stage, prod]\ncompatibleAppVersions: \"\u003e=0.1.0 \u003c2.0.0\"\nparameterContract: inari.smoke.params.v1\ndependencies: []\ntimeout: 5m\nprofiles:\n  ci: {sideEffects: readOnly, cleanup: required}\n  stage: {sideEffects: readOnly, cleanup: required}\n  prod: {sideEffects: readOnly, cleanup: required}\nrbacRequirements:\n  - verbs: [get, list]\n    resources: [pods, services]\nworkflowTemplate: workflowtemplate.yaml\nentrypoint: smoke\nidempotency: safe\ncleanup: no resources are created by the read-only journey\n"
+  },
+  "tests/smoke/values.yaml": {
+    "mode": 420,
+    "content": "observability:\n  enabled: false\n  rules:\n    enabled: false\n"
+  },
+  "tests/smoke/workflowtemplate.yaml": {
+    "mode": 420,
+    "content": "apiVersion: argoproj.io/v1alpha1\nkind: WorkflowTemplate\nmetadata:\n  name: matrix-app\n  namespace: default\n  labels:\n    inari.dev/smoke-target: matrix-app\n    inari.dev/suite-schema: inari.smoke.v1\nspec:\n  entrypoint: smoke\n  activeDeadlineSeconds: 300\n  ttlStrategy:\n    secondsAfterCompletion: 300\n    secondsAfterFailure: 3600\n  templates:\n    - name: smoke\n      retryStrategy:\n        limit: 1\n      container:\n        name: smoke\n        image: curlimages/curl:8.11.1@sha256:9be9b39ac2a66b98bef6d1e1e615af8ff50ec2e746b9163bc12f2bdbf14a949d\n        imagePullPolicy: IfNotPresent\n        command: [sh, -c]\n        args:\n          - \u003e-\n            curl --fail --silent --show-error --max-time 10 http://matrix-app.default.svc:8080/ |\n            grep -q 'Welcome to nginx'\n        securityContext:\n          runAsNonRoot: true\n          runAsUser: 100\n          runAsGroup: 101\n          allowPrivilegeEscalation: false\n          readOnlyRootFilesystem: true\n          capabilities: {drop: [ALL]}\n"
+  }
+}
