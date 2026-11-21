@@ -1,0 +1,6 @@
+{
+  "charts/__HIROBA_NAME__": "0.1.0",
+  "extension": "0.1.0",
+  "packages/__HIROBA_NAME__": "0.1.0",
+  "packages/observability-pack": "0.1.0"
+}

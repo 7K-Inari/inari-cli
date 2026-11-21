@@ -1,0 +1,6 @@
+apiVersion: v2
+name: __HIROBA_NAME__
+description: CI-only Hiroba extension and runtime-smoke fixture
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

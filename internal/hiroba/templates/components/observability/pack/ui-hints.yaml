@@ -1,0 +1,4 @@
+fields:
+  render:
+    title: Render mode
+    description: dashboards, rules-local, rules-central, or all

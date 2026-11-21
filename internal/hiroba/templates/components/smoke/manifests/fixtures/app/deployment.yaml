@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: __HIROBA_FIXTURE_NAME__
+  namespace: default
+  labels: {app.kubernetes.io/name: __HIROBA_FIXTURE_NAME__}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: __HIROBA_FIXTURE_NAME__}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: __HIROBA_FIXTURE_NAME__}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: fixture
+          image: nginxinc/nginx-unprivileged@sha256:c38007e929d1d368ea26df1b696bfc5655e274db11f755fad63c25950a157423
+          imagePullPolicy: IfNotPresent
+          ports: [{name: http, containerPort: 8080}]
+          readinessProbe:
+            httpGet: {path: /, port: http}
+            periodSeconds: 2
+            failureThreshold: 15
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+          resources:
+            requests: {cpu: 25m, memory: 32Mi}
+            limits: {cpu: 200m, memory: 128Mi}

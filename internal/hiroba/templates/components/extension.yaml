@@ -1,0 +1,22 @@
+apiVersion: inari.io/v1alpha1
+kind: Extension
+metadata:
+  name: __HIROBA_NAME__
+spec:
+  version: 0.1.0 # x-release-please-version
+  kinds: __HIROBA_EXTENSION_KINDS__
+  backend:
+    image: ghcr.io/7k-hiroba/__HIROBA_NAME__/extension
+    digestPinning: required
+    actions: [scaffold.ping]
+  ui:
+    remoteEntryOci: ghcr.io/7k-hiroba/__HIROBA_NAME__/extension-ui
+    slots:
+      - {kind: cluster-tab, name: health}
+  contracts:
+    backend: [inari.plugin.v1]
+    ui:
+      sdk: ">=0.1.8 <2.0.0"
+      hostApi: inari.ui.v1
+  permissions:
+    - extensions:invoke:__HIROBA_NAME__

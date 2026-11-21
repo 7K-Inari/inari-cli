@@ -1,0 +1,13 @@
+{
+  "fixtureVersion": "alloy-v1.13.0",
+  "reviewRequired": true,
+  "sourceConfig": "config.river",
+  "metric": "workflows_scaffold_up",
+  "labels": {
+    "cluster": "kind-ci",
+    "instance": "ci",
+    "job": "__HIROBA_NAME__",
+    "org": "ci"
+  },
+  "value": 1
+}

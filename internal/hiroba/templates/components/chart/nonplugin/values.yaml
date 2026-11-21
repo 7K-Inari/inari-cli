@@ -1,0 +1,20 @@
+replicaCount: 1
+image:
+  repository: nginxinc/nginx-unprivileged
+  tag: "1.29.4"
+  digest: "sha256:c38007e929d1d368ea26df1b696bfc5655e274db11f755fad63c25950a157423"
+  pullPolicy: IfNotPresent
+service:
+  type: ClusterIP
+  port: 8080
+observability:
+  enabled: false
+  rules:
+    enabled: false
+resources:
+  requests:
+    cpu: 25m
+    memory: 32Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi

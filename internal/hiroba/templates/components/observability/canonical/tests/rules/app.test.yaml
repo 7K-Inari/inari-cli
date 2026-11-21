@@ -1,0 +1,25 @@
+evaluation_interval: 1m
+rule_files:
+  - ../../rules/app.yaml
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'workflows_scaffold_up{job="__HIROBA_NAME__"}'
+        values: '1 1 1 1 0 0 0 0 0 0 0'
+    promql_expr_test:
+      - expr: workflows_scaffold:up:sum
+        eval_time: 0m
+        exp_samples:
+          - labels: 'workflows_scaffold:up:sum'
+            value: 1
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: WorkflowsScaffoldDown
+        exp_alerts:
+          - exp_labels:
+              alertname: WorkflowsScaffoldDown
+              app: __HIROBA_NAME__
+              job: __HIROBA_NAME__
+              severity: critical
+            exp_annotations:
+              summary: Synthetic __HIROBA_NAME__ target is down

@@ -17,7 +17,10 @@ import (
 )
 
 // gitPollInterval is the connect wait-loop interval (overridden in tests).
-var gitPollInterval = 3 * time.Second
+var (
+	gitPollInterval        = 3 * time.Second
+	errGitConnectCancelled = errors.New("cancelled; no connection was created unless you completed the browser step — check 'inari git list'")
+)
 
 func newGitCmd(opts *GlobalOptions) *cobra.Command {
 	c := &cobra.Command{
@@ -87,6 +90,9 @@ connection and exits without starting a new flow.`,
 
 			conns, err := client.List(ctx)
 			if err != nil {
+				if errors.Is(err, context.Canceled) {
+					return errGitConnectCancelled
+				}
 				return err
 			}
 			if existing := gitconn.Find(conns, provider); existing != nil {
@@ -97,6 +103,9 @@ connection and exits without starting a new flow.`,
 
 			consentURL, err := client.Authorize(ctx, provider, apiBase)
 			if err != nil {
+				if errors.Is(err, context.Canceled) {
+					return errGitConnectCancelled
+				}
 				return err
 			}
 			fmt.Fprintf(opts.Out, "Open this URL to connect %s:\n%s\n", provider, consentURL)
@@ -118,7 +127,7 @@ connection and exits without starting a new flow.`,
 					return fmt.Errorf("timed out waiting for the %s connection; if you completed the browser login, run 'inari git status %s'", provider, provider)
 				}
 				if errors.Is(err, context.Canceled) {
-					return fmt.Errorf("cancelled; no connection was created unless you completed the browser step — check 'inari git list'")
+					return errGitConnectCancelled
 				}
 				return err
 			}
