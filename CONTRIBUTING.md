@@ -59,6 +59,14 @@ To regenerate embedded index/release metadata with the canonical workflows imple
 HIROBA_PREPARE_MATRIX=1 HIROBA_WORKFLOWS_DIR=/path/to/workflows go test ./internal/hiroba -run TestPrepareCanonicalMatrix
 ```
 
+The workflows checkout must support the reviewed `releaseComponents` candidate contract. Run its complete release-plan matrix and workflow-contract tests from that checkout:
+
+```sh
+cd "$HIROBA_WORKFLOWS_DIR"
+.venv/bin/python -m unittest tests.unit.test_full_matrix_release_plan tests.unit.test_workflow_contracts
+cd -
+```
+
 Generate clean fixtures with no server configuration:
 
 ```sh
@@ -78,6 +86,7 @@ python3 "$WF/scripts/validate-repository.py" --root "$FIXTURE" --registry "$REGI
 python3 "$WF/scripts/build-indexes.py" --root "$FIXTURE" --check
 python3 "$WF/scripts/sync-release-please-config.py" --root "$FIXTURE" --check
 python3 "$WF/scripts/discover-components.py" --root "$FIXTURE" --all
+python3 "$WF/scripts/prepare-release-plan.py" --root "$FIXTURE" --source-sha "$(git -C "$FIXTURE" rev-parse HEAD)" --rehearsal >/dev/null
 ```
 
 For observability fixtures also run `render-observability.py --check` and `test-offline-observability.sh --root "$FIXTURE"`. Run applicable package, Go, UI, chart, compatibility, and runtime lanes with the exact commands in the pinned reusable workflows. Runtime verification uses only local kind/CI profiles; never run real stage/prod from this change.

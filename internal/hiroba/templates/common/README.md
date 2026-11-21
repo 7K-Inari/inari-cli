@@ -16,6 +16,6 @@ Short package names are local/display names only. Use the canonical `<source>/<p
 
 ## Development
 
-Keep `package.yaml`/`template.yaml`, values schemas, canonical observability assets, generated chart/pack output, indexes, and release metadata synchronized. Run the repository's immutable PR callers and regeneration checks before submitting changes. Chartless observability still publishes the companion pack; chart-native output is optional. Fixture-only smoke suites are CI-only and are not application evidence.
+Keep `package.yaml`/`template.yaml`, values schemas, canonical observability assets, generated chart/pack output, indexes, `releaseComponents`, and release metadata synchronized. Kind-qualified release identities prevent same-named components from colliding; artifact-bound smoke inherits its target identity. Run the repository's immutable PR callers and regeneration checks before submitting changes. Chartless observability still publishes the companion pack; chart-native output is optional. Fixture-only smoke suites are CI-only and are not application evidence.
 
 The optional UI uses the stable `@7k-inari/ui-plugin-sdk@0.1.8` registry release and canonical `inari-ui-ext build`; no clone, postinstall, custom-webpack, or `@7k-hiroba` npm scope is used.
