@@ -2,6 +2,8 @@ name: ci
 
 on:
   pull_request:
+  # Manual retrigger: GitHub occasionally drops pull_request synchronize events.
+  workflow_dispatch:
 
 permissions:
   contents: read

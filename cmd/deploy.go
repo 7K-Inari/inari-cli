@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"github.com/7K-Inari/inari-api/gen/go/oas"
+	"github.com/Masterminds/semver/v3"
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
 	"github.com/7K-Inari/inari-cli/internal/prompt"
@@ -13,15 +15,16 @@ import (
 
 func newDeployCmd(opts *GlobalOptions) *cobra.Command {
 	var (
-		clusterID string
-		version   string
-		channel   string
-		name      string
-		namespace string
-		ownerTeam string
-		file      string
-		sets      []string
-		dryRun    bool
+		clusterID     string
+		version       string
+		channel       string
+		name          string
+		namespace     string
+		ownerTeam     string
+		file          string
+		sets          []string
+		dryRun        bool
+		observability deploymentPlanFlags
 	)
 	c := &cobra.Command{
 		Use:   "deploy ITEM",
@@ -66,6 +69,12 @@ printed.`,
 			item, err := getCatalogItem(ctx, client, cc.Tenant, itemID, clusterID)
 			if err != nil {
 				return err
+			}
+			if version == "" && channel != "" && channel != "stable" {
+				version, err = latestChannelVersion(*item, channel)
+				if err != nil {
+					return err
+				}
 			}
 			rawSchema := pickSchema(*item, version)
 			if rawSchema == nil && version != "" {
@@ -123,45 +132,33 @@ printed.`,
 				return printDecision(opts, rsp.JSON200.Decision)
 			}
 
-			deployBody := oas.DeployCatalogItemJSONRequestBody{
-				ClusterId: clusterID,
-				ItemId:    itemID,
-				Spec:      spec,
-			}
+			source := oas.Source{Kind: "catalog", ItemId: &itemID}
 			if version != "" {
-				deployBody.Version = &version
+				source.Version = &version
 			}
-			if channel != "" {
-				deployBody.Channel = &channel
+			idempotencyKey := uuid.NewString()
+			request := oas.PlanRequest{
+				Operation: "deploy", Source: &source, IdempotencyKey: idempotencyKey,
+				Deployment: oas.DeploymentInput{TargetId: clusterID, Spec: spec},
 			}
 			if name != "" {
-				deployBody.Name = &name
+				request.Deployment.Name = &name
 			}
 			if namespace != "" {
-				deployBody.Namespace = &namespace
+				request.Deployment.Namespace = &namespace
 			}
 			if ownerTeam != "" {
-				deployBody.OwnerTeam = &ownerTeam
+				request.Deployment.OwnerTeam = &ownerTeam
 			}
-			rsp, err := client.OAS.DeployCatalogItemWithResponse(ctx, cc.Tenant, deployBody)
+			preflight, err := completePlanPreflight(ctx, client, cc.Tenant, request, observability)
 			if err != nil {
 				return err
 			}
-			if rsp.JSON200 == nil {
-				return apiError(rsp.Status(), rsp.ApplicationproblemJSONDefault)
+			plan, err := submitPlan(ctx, client, cc.Tenant, preflight, idempotencyKey)
+			if err != nil {
+				return err
 			}
-			d := rsp.JSON200.Deploy
-			fmt.Fprintf(opts.Out, "Deploy accepted: instance %s (status %s, version %s)\n", d.InstanceID, d.Status, d.Version)
-			if d.CommitSHA != "" {
-				fmt.Fprintf(opts.Out, "Commit: %s\n", d.CommitSHA)
-			}
-			if d.PRURL != "" {
-				fmt.Fprintf(opts.Out, "Pull request: %s\n", d.PRURL)
-			}
-			if d.ApprovalID != "" {
-				fmt.Fprintf(opts.Out, "Approval required: %s\n", d.ApprovalID)
-			}
-			return nil
+			return printPlan(opts, plan)
 		},
 	}
 	c.Flags().StringVar(&clusterID, "cluster", "", "Target cluster ID (required)")
@@ -173,6 +170,8 @@ printed.`,
 	c.Flags().StringVarP(&file, "file", "f", "", "YAML values file (non-interactive)")
 	c.Flags().StringArrayVar(&sets, "set", nil, "Set a value key=value, dot paths supported (repeatable)")
 	c.Flags().BoolVar(&dryRun, "dry-run", false, "Evaluate request-time policies without deploying")
+	addDeploymentPlanFlags(c, &observability, "skip")
+	c.AddCommand(newDeployChartCmd(opts), newDeployTemplateCmd(opts))
 	return c
 }
 
@@ -203,6 +202,29 @@ func printDecision(opts *GlobalOptions, d oas.PolicyDecision) error {
 	printViolations("Violation", d.Violations)
 	printViolations("Warning", d.Warnings)
 	return nil
+}
+
+func latestChannelVersion(item oas.ItemView, channel string) (string, error) {
+	if item.Versions != nil {
+		var best *semver.Version
+		bestRaw := ""
+		for _, candidate := range *item.Versions {
+			if candidate.Channel != channel {
+				continue
+			}
+			parsed, err := semver.NewVersion(candidate.Version)
+			if err != nil {
+				continue
+			}
+			if best == nil || parsed.GreaterThan(best) {
+				best, bestRaw = parsed, candidate.Version
+			}
+		}
+		if bestRaw != "" {
+			return bestRaw, nil
+		}
+	}
+	return "", fmt.Errorf("channel %q has no valid selectable version", channel)
 }
 
 func pickSchema(item oas.ItemView, version string) any {
