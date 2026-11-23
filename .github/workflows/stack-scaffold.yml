@@ -1,0 +1,60 @@
+name: generated chartless KRO lifecycle
+on:
+  pull_request:
+    branches: [main]
+permissions: {contents: read}
+jobs:
+  kro:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: 7K-Hiroba/workflows
+          ref: 522c3530c94336249928f5a65a5a9f98c46bf540 # v1.1.0
+          path: .hiroba/workflows
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with: {go-version: "1.26.3", cache: false}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with: {python-version: "3.11"}
+      - run: pip install --requirement .hiroba/workflows/requirements-dev.txt
+      - id: tools-key
+        run: echo "key=$(.hiroba/workflows/scripts/install-ci-tools.sh --profiles kro --cache-key)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        id: cache
+        with:
+          path: ${{ runner.temp }}/hiroba-cache
+          key: generated-kro-${{ steps.tools-key.outputs.key }}
+      - name: Install only chartless KRO lifecycle tools
+        env:
+          HIROBA_CACHE_DIR: ${{ runner.temp }}/hiroba-cache
+          HIROBA_CACHE_HIT: ${{ steps.cache.outputs.cache-hit }}
+        run: .hiroba/workflows/scripts/install-ci-tools.sh --profiles kro
+      - name: Generate the exact chartless KRO consumer
+        env:
+          HOME: ${{ runner.temp }}/home
+        run: go run . hiroba init qa-kro --dir "$RUNNER_TEMP" --type catalog --archetype stack --with-observability
+      - name: Initialize generated source identity
+        run: |
+          set -euo pipefail
+          fixture="$RUNNER_TEMP/qa-kro"
+          git -C "$fixture" init -q
+          git -C "$fixture" config user.name "Generated QA"
+          git -C "$fixture" config user.email "generated-qa@example.invalid"
+          git -C "$fixture" add --all
+          git -C "$fixture" commit -qm "generated chartless KRO fixture"
+      - name: Reconcile install and upgrade in one fresh cluster
+        env:
+          WORKFLOW_SHA: 522c3530c94336249928f5a65a5a9f98c46bf540
+          HIROBA_CACHE_HIT: ${{ steps.cache.outputs.cache-hit }}
+        run: .hiroba/workflows/scripts/run-stack-lifecycle.sh --root "$RUNNER_TEMP/qa-kro"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: generated-kro-lifecycle-evidence
+          path: |
+            ${{ runner.temp }}/qa-kro/evidence
+            ${{ runner.temp }}/qa-kro/diagnostics
+          if-no-files-found: ignore
+          retention-days: 30

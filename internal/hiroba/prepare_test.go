@@ -9,6 +9,27 @@ import (
 	"testing"
 )
 
+func TestChartlessKROHasHostedLifecycleCoverage(t *testing.T) {
+	data, err := os.ReadFile("../../.github/workflows/stack-scaffold.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	for _, expected := range []string{
+		"permissions: {contents: read}",
+		"timeout-minutes: 45",
+		"hiroba init qa-kro",
+		"--type catalog --archetype stack --with-observability",
+		"run-stack-lifecycle.sh",
+		WorkflowSHA,
+		"generated-kro-lifecycle-evidence",
+	} {
+		if !strings.Contains(text, expected) {
+			t.Errorf("chartless KRO hosted lifecycle is missing %q", expected)
+		}
+	}
+}
+
 func TestExternalMatrixDocumentsExplicitTimeout(t *testing.T) {
 	data, err := os.ReadFile("../../CONTRIBUTING.md")
 	if err != nil {
