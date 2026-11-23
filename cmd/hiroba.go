@@ -41,8 +41,8 @@ func newHirobaInitCmd(opts *GlobalOptions) *cobra.Command {
 		Use:   "init NAME",
 		Short: "Scaffold a Hiroba community application repository",
 		Args:  cobra.ExactArgs(1),
-		Example: `  inari hiroba init my-service
-  inari hiroba init my-service --type app --with-plugin --with-ui --with-chart --with-observability --with-runtime-smoke`,
+		Example: `  inari hiroba init my-service --archetype non-stack
+  inari hiroba init my-service --type app --archetype stack --with-plugin --with-ui --with-chart --with-observability --with-runtime-smoke`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			options.Name = args[0]
 			if cmd.Flags().Changed("type") && options.Type == "" {
@@ -63,6 +63,7 @@ func newHirobaInitCmd(opts *GlobalOptions) *cobra.Command {
 		},
 	}
 	command.Flags().StringVar(&options.Type, "type", "app", "Repository type: app|extension|catalog|template")
+	command.Flags().StringVar(&options.Archetype, "archetype", "", "Required lifecycle classification: stack|non-stack")
 	command.Flags().StringVar(&dir, "dir", ".", "Parent directory for the new repository")
 	command.Flags().StringVar(&options.Module, "module", "", "Go module path (default github.com/7K-Hiroba/<name>)")
 	command.Flags().BoolVar(&options.WithPlugin, "with-plugin", false, "Include a backend plugin component")

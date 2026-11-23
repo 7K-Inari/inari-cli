@@ -1,8 +1,9 @@
-schema: inari.hiroba.app.v1
+schema: inari.hiroba.app.v2
 app: __HIROBA_NAME__
+archetype: __HIROBA_ARCHETYPE__
 trustTier: experimental
 components:
 __HIROBA_COMPONENTS__  chartsRoot: charts
   packagesRoot: packages
   templatesRoot: templates
-__HIROBA_OBSERVABILITY____HIROBA_SMOKE____HIROBA_COMPATIBILITY____HIROBA_RELEASE_COMPONENTS__
+__HIROBA_OBSERVABILITY____HIROBA_SMOKE____HIROBA_STACK_TEST____HIROBA_COMPATIBILITY____HIROBA_RELEASE_COMPONENTS__

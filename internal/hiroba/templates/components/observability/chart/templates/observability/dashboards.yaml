@@ -10,6 +10,7 @@ metadata:
     grafana_dashboard: '1'
   annotations:
     inari.dev/dashboard-uid: __HIROBA_NAME__-overview
+    inari.dev/folder: __HIROBA_NAME__
 data:
   __HIROBA_NAME__-overview.json: "{\n  \"panels\": [\n    {\n      \"datasource\": {\n\
     \        \"type\": \"prometheus\",\n        \"uid\": \"${DS_PROMETHEUS}\"\n  \

@@ -59,7 +59,7 @@ To regenerate embedded index/release metadata with the canonical workflows imple
 HIROBA_PREPARE_MATRIX=1 HIROBA_WORKFLOWS_DIR=/path/to/workflows go test ./internal/hiroba -run TestPrepareCanonicalMatrix
 ```
 
-Verify all 128 generated trees against a reviewed candidate checkout, including pins, schemas, generated drift, discovery, and release planning:
+Verify all 256 generated trees (four types × two required archetypes × 32 component masks) against a reviewed candidate checkout, including pins, schemas, generated drift, stack declarations, discovery, and release planning:
 
 ```sh
 HIROBA_VERIFY_MATRIX=1 HIROBA_WORKFLOWS_DIR=/path/to/workflows go test ./internal/hiroba -run TestVerifyWorkflowMatrix -count=1
@@ -84,10 +84,13 @@ Generate clean fixtures with no server configuration:
 ```sh
 go build -o "$TMP/inari" .
 mkdir -p "$TMP/home"
-HOME="$TMP/home" "$TMP/inari" hiroba init hiroba-full --dir "$TMP" --type app --with-plugin --with-ui --with-chart --with-observability --with-runtime-smoke
-HOME="$TMP/home" "$TMP/inari" hiroba init hiroba-chartless-obs --dir "$TMP" --type catalog --with-observability
-HOME="$TMP/home" "$TMP/inari" hiroba init hiroba-nonplugin-smoke --dir "$TMP" --type catalog --with-chart --with-runtime-smoke
-HOME="$TMP/home" "$TMP/inari" hiroba init hiroba-chartless-smoke --dir "$TMP" --type template --with-runtime-smoke
+HOME="$TMP/home" "$TMP/inari" hiroba init hiroba-full --dir "$TMP" --type app --archetype stack --with-plugin --with-ui --with-chart --with-observability --with-runtime-smoke
+HOME="$TMP/home" "$TMP/inari" hiroba init hiroba-chartless-obs --dir "$TMP" --type catalog --archetype non-stack --with-observability
+HOME="$TMP/home" "$TMP/inari" hiroba init hiroba-nonplugin-smoke --dir "$TMP" --type catalog --archetype non-stack --with-chart --with-runtime-smoke
+HOME="$TMP/home" "$TMP/inari" hiroba init hiroba-chartless-smoke --dir "$TMP" --type template --archetype non-stack --with-runtime-smoke
+HOME="$TMP/home" "$TMP/inari" hiroba init hiroba-stack-chart --dir "$TMP" --type app --archetype stack --with-chart
+HOME="$TMP/home" "$TMP/inari" hiroba init hiroba-stack-kro --dir "$TMP" --type catalog --archetype stack --with-observability
+HOME="$TMP/home" "$TMP/inari" hiroba init hiroba-stack-fixture --dir "$TMP" --type template --archetype stack
 ```
 
 For each fixture, initialize a temporary git repository, then run the following with `WF` set to the reviewed workflows checkout and `REGISTRY` set to a temporary app-registry fixture:
@@ -98,6 +101,7 @@ python3 "$WF/scripts/validate-repository.py" --root "$FIXTURE" --registry "$REGI
 python3 "$WF/scripts/build-indexes.py" --root "$FIXTURE" --check
 python3 "$WF/scripts/sync-release-please-config.py" --root "$FIXTURE" --check
 python3 "$WF/scripts/discover-components.py" --root "$FIXTURE" --all
+python3 "$WF/scripts/stack-test-config.py" --root "$FIXTURE"
 python3 "$WF/scripts/prepare-release-plan.py" --root "$FIXTURE" --source-sha "$(git -C "$FIXTURE" rev-parse HEAD)" --rehearsal >/dev/null
 ```
 

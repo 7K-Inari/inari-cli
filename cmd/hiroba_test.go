@@ -19,7 +19,7 @@ func TestHirobaInitFullAppOffline(t *testing.T) {
 	t.Setenv("INARI_CONFIG_DIR", filepath.Join(dir, "empty-config"))
 	out, errOut := &bytes.Buffer{}, &bytes.Buffer{}
 	root := NewRootCmd("dev", "none", "now", out, errOut)
-	root.SetArgs([]string{"hiroba", "init", "community-app", "--type", "app", "--dir", dir, "--with-plugin", "--with-ui", "--with-chart", "--with-observability", "--with-runtime-smoke"})
+	root.SetArgs([]string{"hiroba", "init", "community-app", "--type", "app", "--archetype", "non-stack", "--dir", dir, "--with-plugin", "--with-ui", "--with-chart", "--with-observability", "--with-runtime-smoke"})
 	if err := root.Execute(); err != nil {
 		t.Fatalf("hiroba init error = %v", err)
 	}
@@ -53,10 +53,48 @@ func TestHirobaInitFullAppOffline(t *testing.T) {
 	}
 }
 
+func TestHirobaInitRequiresArchetype(t *testing.T) {
+	root := NewRootCmd("dev", "none", "now", &bytes.Buffer{}, &bytes.Buffer{})
+	root.SetArgs([]string{"hiroba", "init", "classified", "--dir", t.TempDir()})
+	if err := root.Execute(); err == nil || !strings.Contains(err.Error(), "archetype") {
+		t.Fatalf("missing archetype error = %v, want explicit classification", err)
+	}
+}
+
+func TestHirobaInitStackArchetypeIncludesLifecycle(t *testing.T) {
+	dir := t.TempDir()
+	root := NewRootCmd("dev", "none", "now", &bytes.Buffer{}, &bytes.Buffer{})
+	root.SetArgs([]string{"hiroba", "init", "stack-app", "--type", "app", "--archetype", "stack", "--with-chart", "--dir", dir})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	target := filepath.Join(dir, "stack-app")
+	for _, name := range []string{
+		"tests/stack/suite.yaml", "tests/stack/install.sh", "tests/stack/upgrade.sh",
+		".github/workflows/stack-test.yml",
+	} {
+		if _, err := os.Stat(filepath.Join(target, name)); err != nil {
+			t.Errorf("expected stack lifecycle %s: %v", name, err)
+		}
+	}
+	config, err := os.ReadFile(filepath.Join(target, ".hiroba.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, expected := range []string{"schema: inari.hiroba.app.v2", "archetype: stack", "stackTest:"} {
+		if !strings.Contains(string(config), expected) {
+			t.Errorf("stack config missing %q", expected)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(target, "tests/smoke")); !os.IsNotExist(err) {
+		t.Errorf("stack archetype silently added runtime smoke: %v", err)
+	}
+}
+
 func TestHirobaInitChartlessComponents(t *testing.T) {
 	dir := t.TempDir()
 	root := NewRootCmd("dev", "none", "now", &bytes.Buffer{}, &bytes.Buffer{})
-	root.SetArgs([]string{"hiroba", "init", "chartless", "--type", "template", "--dir", dir, "--with-observability", "--with-runtime-smoke"})
+	root.SetArgs([]string{"hiroba", "init", "chartless", "--type", "template", "--archetype", "non-stack", "--dir", dir, "--with-observability", "--with-runtime-smoke"})
 	if err := root.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +129,7 @@ func TestHirobaInitContractWarningDoesNotBlock(t *testing.T) {
 	dir := t.TempDir()
 	errOut := &bytes.Buffer{}
 	root := NewRootCmd("dev", "none", "now", &bytes.Buffer{}, errOut)
-	root.SetArgs([]string{"hiroba", "init", "warning-app", "--dir", dir, "--with-plugin", "--server", server.URL})
+	root.SetArgs([]string{"hiroba", "init", "warning-app", "--dir", dir, "--archetype", "non-stack", "--with-plugin", "--server", server.URL})
 	if err := root.Execute(); err != nil {
 		t.Fatalf("incompatible server blocked scaffold: %v", err)
 	}
@@ -134,7 +172,7 @@ func TestHirobaInitValidation(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			root := NewRootCmd("dev", "none", "now", &bytes.Buffer{}, &bytes.Buffer{})
-			args := append(append([]string{}, test.args...), "--dir", t.TempDir())
+			args := append(append([]string{}, test.args...), "--archetype", "non-stack", "--dir", t.TempDir())
 			root.SetArgs(args)
 			if err := root.Execute(); err == nil || !strings.Contains(err.Error(), test.want) {
 				t.Fatalf("expected %q error, got %v", test.want, err)
@@ -147,7 +185,7 @@ func TestHirobaInitValidation(t *testing.T) {
 		t.Fatal(err)
 	}
 	root := NewRootCmd("dev", "none", "now", &bytes.Buffer{}, &bytes.Buffer{})
-	root.SetArgs([]string{"hiroba", "init", "existing", "--dir", dir})
+	root.SetArgs([]string{"hiroba", "init", "existing", "--archetype", "non-stack", "--dir", dir})
 	if err := root.Execute(); err == nil || !strings.Contains(err.Error(), "already exists") {
 		t.Fatalf("expected existing-directory error, got %v", err)
 	}

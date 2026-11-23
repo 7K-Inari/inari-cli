@@ -33,6 +33,7 @@ var templatesFS embed.FS
 type Options struct {
 	Name              string
 	Type              string
+	Archetype         string
 	Module            string
 	WithPlugin        bool
 	WithUI            bool
@@ -66,6 +67,11 @@ func normalizeOptions(opts Options) (Options, error) {
 	default:
 		return opts, fmt.Errorf("invalid type %q: want app|extension|catalog|template", opts.Type)
 	}
+	switch opts.Archetype {
+	case "stack", "non-stack":
+	default:
+		return opts, fmt.Errorf("archetype must be explicitly stack or non-stack")
+	}
 	if opts.Module == "" {
 		opts.Module = "github.com/7K-Hiroba/" + opts.Name
 	}
@@ -86,6 +92,9 @@ func optionMask(opts Options) int {
 }
 
 func matrixKey(opts Options) string {
+	if opts.Archetype == "stack" {
+		return fmt.Sprintf("%s-stack-%02d", opts.Type, optionMask(opts))
+	}
 	return fmt.Sprintf("%s-%02d", opts.Type, optionMask(opts))
 }
 
@@ -219,6 +228,20 @@ func selectedFiles(opts Options) (map[string]fileSpec, error) {
 			return nil, err
 		}
 	}
+	if opts.Archetype == "stack" {
+		if err := addTree(files, "templates/components/stack/common", "tests/stack"); err != nil {
+			return nil, err
+		}
+		stackVariant := "manifests"
+		if opts.WithChart {
+			stackVariant = "helm"
+		} else if opts.WithObservability {
+			stackVariant = "kro"
+		}
+		if err := addTree(files, "templates/components/stack/"+stackVariant, "tests/stack"); err != nil {
+			return nil, err
+		}
+	}
 
 	for _, name := range []string{"validate", "release-please", "release", "edge"} {
 		if err := addWorkflow(files, name); err != nil {
@@ -262,8 +285,18 @@ func selectedFiles(opts Options) (map[string]fileSpec, error) {
 			return nil, err
 		}
 	}
+	if opts.Archetype == "stack" {
+		if err := addWorkflow(files, "stack-test"); err != nil {
+			return nil, err
+		}
+	}
 
 	matrixRoot := "templates/matrix/" + matrixKey(opts)
+	if opts.Archetype == "stack" {
+		if _, err := fs.Stat(templatesFS, matrixRoot); os.IsNotExist(err) {
+			matrixRoot = fmt.Sprintf("templates/matrix/%s-%02d", opts.Type, optionMask(opts))
+		}
+	}
 	if _, err := fs.Stat(templatesFS, matrixRoot); err == nil {
 		if err := addTree(files, matrixRoot, ""); err != nil {
 			return nil, err
@@ -320,6 +353,10 @@ func dynamicReplacements(opts Options) map[string]string {
 			smoke += "  targetComponent: charts/" + opts.Name + "\n"
 		}
 	}
+	stackTest := ""
+	if opts.Archetype == "stack" {
+		stackTest = "stackTest: {path: tests/stack}\n"
+	}
 	compatibility := ""
 	if effectivePlugin || opts.WithUI {
 		compatibility = "compatibility:\n  matrix: ci/compatibility-matrix.json\n"
@@ -350,8 +387,14 @@ func dynamicReplacements(opts Options) map[string]string {
 		kinds = "[backend, ui]"
 	}
 	chartDependencies := "dependencies: []\n"
+	stackSetup := "setupProfiles: []\n"
+	stackPackCover := ""
+	stackPackTest := ""
 	if opts.WithObservability {
 		chartDependencies = "dependencies:\n  - packages/observability-pack/tests/deps/prometheusrule-crd.yaml\n"
+		stackSetup = "setupProfiles: [kro]\n"
+		stackPackCover = "  - packages/observability-pack\n"
+		stackPackTest = "bash \"$HIROBA_STACK_ROOT/packages/observability-pack/tests/run.sh\"\n"
 	}
 	templateObservability := ""
 	if opts.WithObservability {
@@ -369,10 +412,14 @@ func dynamicReplacements(opts Options) map[string]string {
 		"__HIROBA_OBSERVABILITY__":          observability,
 		"__HIROBA_PACKAGE_OBSERVABILITY__":  packageObservability,
 		"__HIROBA_SMOKE__":                  smoke,
+		"__HIROBA_STACK_TEST__":             stackTest,
 		"__HIROBA_COMPATIBILITY__":          compatibility,
 		"__HIROBA_RELEASE_COMPONENTS__":     releaseComponents,
 		"__HIROBA_EXTENSION_KINDS__":        kinds,
 		"__HIROBA_CHART_DEPENDENCIES__":     chartDependencies,
+		"__HIROBA_STACK_SETUP__":            stackSetup,
+		"__HIROBA_STACK_PACK_COVER__":       stackPackCover,
+		"__HIROBA_STACK_PACK_TEST__":        stackPackTest,
 		"__HIROBA_OBSERVABILITY_ENABLED__":  fmt.Sprintf("%t", opts.WithObservability),
 		"__HIROBA_TEMPLATE_OBSERVABILITY__": templateObservability,
 		"__HIROBA_EXTENSION_JOBS__":         extensionJobs,
@@ -398,6 +445,7 @@ func renderFiles(files map[string]fileSpec, opts Options, workflowSHA, workflowV
 	dynamic := dynamicReplacements(opts)
 	baseReplacements := map[string]string{
 		"__HIROBA_NAME__":         opts.Name,
+		"__HIROBA_ARCHETYPE__":    opts.Archetype,
 		"__HIROBA_NAME_PASCAL__":  pascalName(opts.Name),
 		"__HIROBA_HELM_RELEASE__": boundedResourceName(opts.Name, 53),
 		"__HIROBA_FIXTURE_NAME__": boundedResourceName(opts.Name, 55) + "-fixture",
