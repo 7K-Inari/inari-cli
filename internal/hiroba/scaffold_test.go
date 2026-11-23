@@ -232,6 +232,52 @@ func TestFullMatrixContentContracts(t *testing.T) {
 	}
 }
 
+func TestStackLifecycleVariantsProveDesiredRevisionConvergence(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		opts     Options
+		expected []string
+	}{
+		{
+			name: "kro",
+			opts: Options{Name: "matrix-app", Type: "catalog", Archetype: "stack", WithObservability: true},
+			expected: []string{
+				`folder = next(resource for resource in data["spec"]["resources"] if resource["id"] == "folder")`,
+				`folder["template"]["metadata"].setdefault("annotations", {})["inari.dev/ci-revision"] = phase`,
+				`test "$revision" = "$HIROBA_STACK_PHASE"`,
+			},
+		},
+		{
+			name: "manifests",
+			opts: Options{Name: "matrix-app", Type: "template", Archetype: "stack"},
+			expected: []string{
+				`data["spec"]["template"]["metadata"].setdefault("annotations", {})["inari.dev/ci-revision"] = phase`,
+				`kubectl rollout status deployment/matrix-app-fixture -n default --timeout=120s`,
+				`.spec.template.metadata.annotations.inari\.dev/ci-revision`,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			target := filepath.Join(t.TempDir(), test.opts.Name)
+			if err := Scaffold(target, test.opts); err != nil {
+				t.Fatal(err)
+			}
+			tree := readTree(t, target)
+			for _, phase := range []string{"install", "upgrade"} {
+				content := tree["tests/stack/"+phase+".sh"].Content
+				for _, expected := range test.expected {
+					if !strings.Contains(content, expected) {
+						t.Errorf("%s phase is missing convergence assertion %q", phase, expected)
+					}
+				}
+				if strings.Contains(content, `data["metadata"].setdefault`) {
+					t.Errorf("%s phase still changes only top-level metadata", phase)
+				}
+			}
+		})
+	}
+}
+
 func TestBoundedResourceNameMatchesWorkflowContract(t *testing.T) {
 	name := "a" + strings.Repeat("b", 61) + "c"
 	if got := boundedResourceName(name, 53); got != "abbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb-00bdc0e0" {
