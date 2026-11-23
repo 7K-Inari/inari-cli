@@ -62,13 +62,13 @@ HIROBA_PREPARE_MATRIX=1 HIROBA_WORKFLOWS_DIR=/path/to/workflows go test ./intern
 Verify all 256 generated trees (four types × two required archetypes × 32 component masks) against a reviewed candidate checkout, including pins, schemas, generated drift, stack declarations, discovery, and release planning:
 
 ```sh
-HIROBA_VERIFY_MATRIX=1 HIROBA_WORKFLOWS_DIR=/path/to/workflows go test ./internal/hiroba -run TestVerifyWorkflowMatrix -count=1
+HIROBA_VERIFY_MATRIX=1 HIROBA_WORKFLOWS_DIR=/path/to/workflows go test ./internal/hiroba -run TestVerifyWorkflowMatrix -count=1 -timeout=30m
 ```
 
 Before merging a production-pin update, check out the exact signed target commit and additionally require that it equals the CLI constant:
 
 ```sh
-HIROBA_VERIFY_MATRIX=1 HIROBA_REQUIRE_PRODUCTION_PIN=1 HIROBA_WORKFLOWS_DIR=/path/to/workflows go test ./internal/hiroba -run TestVerifyWorkflowMatrix -count=1
+HIROBA_VERIFY_MATRIX=1 HIROBA_REQUIRE_PRODUCTION_PIN=1 HIROBA_WORKFLOWS_DIR=/path/to/workflows go test ./internal/hiroba -run TestVerifyWorkflowMatrix -count=1 -timeout=30m
 ```
 
 The workflows checkout must support the reviewed `releaseComponents` candidate contract. Run its complete release-plan matrix and workflow-contract tests from that checkout:

@@ -9,6 +9,16 @@ import (
 	"testing"
 )
 
+func TestExternalMatrixDocumentsExplicitTimeout(t *testing.T) {
+	data, err := os.ReadFile("../../CONTRIBUTING.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if count := strings.Count(string(data), "-timeout=30m"); count < 2 {
+		t.Fatalf("external matrix commands must include an explicit 30m timeout; found %d", count)
+	}
+}
+
 // TestVerifyWorkflowMatrix checks every generated tree against an external candidate or exact production checkout.
 func TestVerifyWorkflowMatrix(t *testing.T) {
 	if os.Getenv("HIROBA_VERIFY_MATRIX") != "1" {
