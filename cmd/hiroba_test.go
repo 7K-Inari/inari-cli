@@ -42,7 +42,7 @@ func TestHirobaInitFullAppOffline(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(caller), "@b26b53f5ba58a27d1973fec6dfa6469d0b93ba62 # v1.1.0") {
+	if !strings.Contains(string(caller), "@6c6939171dbf8d5b7dac25d1064955db12949329 # v1.1.0") {
 		t.Errorf("workflow pin is not the immutable production release: %s", caller)
 	}
 	if strings.Contains(out.String(), "warning") || strings.Contains(errOut.String(), "warning") {

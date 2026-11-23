@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	WorkflowSHA     = "b26b53f5ba58a27d1973fec6dfa6469d0b93ba62"
+	WorkflowSHA     = "6c6939171dbf8d5b7dac25d1064955db12949329"
 	WorkflowVersion = "v1.1.0"
 )
 

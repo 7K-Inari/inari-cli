@@ -1,27 +1,27 @@
 {
   ".github/workflows/edge.yml": {
     "mode": 420,
-    "content": "name: edge\non: {push: {branches: [main]}}\npermissions: {contents: read}\nconcurrency: {group: \"hiroba-release-${{ github.repository }}\", cancel-in-progress: false}\njobs:\n  edge:\n    uses: 7K-Hiroba/workflows/.github/workflows/edge.yml@b26b53f5ba58a27d1973fec6dfa6469d0b93ba62 # v1.1.0\n    with: {root: .}\n    permissions: {contents: write, packages: write, id-token: write, attestations: write, actions: read, artifact-metadata: write}\n"
+    "content": "name: edge\non: {push: {branches: [main]}}\npermissions: {contents: read}\nconcurrency: {group: \"hiroba-release-${{ github.repository }}\", cancel-in-progress: false}\njobs:\n  edge:\n    uses: 7K-Hiroba/workflows/.github/workflows/edge.yml@6c6939171dbf8d5b7dac25d1064955db12949329 # v1.1.0\n    with: {root: .}\n    permissions: {contents: write, packages: write, id-token: write, attestations: write, actions: read, artifact-metadata: write}\n"
   },
   ".github/workflows/extension-ci.yml": {
     "mode": 420,
-    "content": "name: extension CI\non: {pull_request: {branches: [main]}}\npermissions: {contents: read}\njobs:\n  ui:\n    uses: 7K-Hiroba/workflows/.github/workflows/ci-ui-extension.yml@b26b53f5ba58a27d1973fec6dfa6469d0b93ba62 # v1.1.0\n    with: {root: .}\n"
+    "content": "name: extension CI\non: {pull_request: {branches: [main]}}\npermissions: {contents: read}\njobs:\n  ui:\n    uses: 7K-Hiroba/workflows/.github/workflows/ci-ui-extension.yml@6c6939171dbf8d5b7dac25d1064955db12949329 # v1.1.0\n    with: {root: .}\n"
   },
   ".github/workflows/release-please.yml": {
     "mode": 420,
-    "content": "name: release-please\non: {push: {branches: [main]}}\npermissions: {contents: read}\njobs:\n  propose:\n    uses: 7K-Hiroba/workflows/.github/workflows/release-please.yml@b26b53f5ba58a27d1973fec6dfa6469d0b93ba62 # v1.1.0\n    with: {root: ., app-id: \"${{ vars.HIROBA_RELEASE_APP_ID }}\"}\n    secrets:\n      release-private-key: \"${{ secrets.HIROBA_RELEASE_PRIVATE_KEY }}\"\n    permissions: {contents: write, pull-requests: write}\n"
+    "content": "name: release-please\non: {push: {branches: [main]}}\npermissions: {contents: read}\njobs:\n  propose:\n    uses: 7K-Hiroba/workflows/.github/workflows/release-please.yml@6c6939171dbf8d5b7dac25d1064955db12949329 # v1.1.0\n    with: {root: ., app-id: \"${{ vars.HIROBA_RELEASE_APP_ID }}\"}\n    secrets:\n      release-private-key: \"${{ secrets.HIROBA_RELEASE_PRIVATE_KEY }}\"\n    permissions: {contents: write, pull-requests: write}\n"
   },
   ".github/workflows/release.yml": {
     "mode": 420,
-    "content": "name: release\non:\n  push: {branches: [main]}\n  workflow_dispatch:\n    inputs: {repair_tag: {required: false, type: string}}\npermissions: {contents: read}\nconcurrency: {group: \"hiroba-release-${{ github.repository }}\", cancel-in-progress: false}\njobs:\n  release:\n    uses: 7K-Hiroba/workflows/.github/workflows/release.yml@b26b53f5ba58a27d1973fec6dfa6469d0b93ba62 # v1.1.0\n    with: {root: ., repair_tag: \"${{ inputs.repair_tag }}\", app-id: \"${{ vars.HIROBA_RELEASE_APP_ID }}\"}\n    secrets:\n      release-private-key: \"${{ secrets.HIROBA_RELEASE_PRIVATE_KEY }}\"\n    permissions: {contents: write, packages: write, id-token: write, attestations: write, actions: read, artifact-metadata: write}\n"
+    "content": "name: release\non:\n  push: {branches: [main]}\n  workflow_dispatch:\n    inputs: {repair_tag: {required: false, type: string}}\npermissions: {contents: read}\nconcurrency: {group: \"hiroba-release-${{ github.repository }}\", cancel-in-progress: false}\njobs:\n  release:\n    uses: 7K-Hiroba/workflows/.github/workflows/release.yml@6c6939171dbf8d5b7dac25d1064955db12949329 # v1.1.0\n    with: {root: ., repair_tag: \"${{ inputs.repair_tag }}\", app-id: \"${{ vars.HIROBA_RELEASE_APP_ID }}\"}\n    secrets:\n      release-private-key: \"${{ secrets.HIROBA_RELEASE_PRIVATE_KEY }}\"\n    permissions: {contents: write, packages: write, id-token: write, attestations: write, actions: read, artifact-metadata: write}\n"
   },
   ".github/workflows/runtime-smoke.yml": {
     "mode": 420,
-    "content": "name: runtime smoke\non: {pull_request: {branches: [main]}}\npermissions: {contents: read}\njobs:\n  smoke:\n    uses: 7K-Hiroba/workflows/.github/workflows/test-runtime-smoke.yml@b26b53f5ba58a27d1973fec6dfa6469d0b93ba62 # v1.1.0\n    with: {root: ., mode: local, profile: ci}\n"
+    "content": "name: runtime smoke\non: {pull_request: {branches: [main]}}\npermissions: {contents: read}\njobs:\n  smoke:\n    uses: 7K-Hiroba/workflows/.github/workflows/test-runtime-smoke.yml@6c6939171dbf8d5b7dac25d1064955db12949329 # v1.1.0\n    with: {root: ., mode: local, profile: ci}\n"
   },
   ".github/workflows/validate.yml": {
     "mode": 420,
-    "content": "name: validate\non: {pull_request: {branches: [main]}, merge_group: {}}\npermissions: {contents: read}\njobs:\n  validate:\n    uses: 7K-Hiroba/workflows/.github/workflows/validate-packages.yml@b26b53f5ba58a27d1973fec6dfa6469d0b93ba62 # v1.1.0\n    with: {root: .}\n"
+    "content": "name: validate\non: {pull_request: {branches: [main]}, merge_group: {}}\npermissions: {contents: read}\njobs:\n  validate:\n    uses: 7K-Hiroba/workflows/.github/workflows/validate-packages.yml@6c6939171dbf8d5b7dac25d1064955db12949329 # v1.1.0\n    with: {root: .}\n"
   },
   ".gitignore": {
     "mode": 420,
