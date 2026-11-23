@@ -232,6 +232,17 @@ func TestFullMatrixContentContracts(t *testing.T) {
 	}
 }
 
+func TestStackCallerDocumentsMergeTreeEvidence(t *testing.T) {
+	target := filepath.Join(t.TempDir(), "matrix-app")
+	if err := Scaffold(target, Options{Name: "matrix-app", Type: "app", Archetype: "stack"}); err != nil {
+		t.Fatal(err)
+	}
+	caller := readTree(t, target)[".github/workflows/stack-test.yml"].Content
+	if !strings.Contains(caller, "merge tree") || !strings.Contains(caller, "associated with the head") {
+		t.Fatalf("stack caller does not distinguish PR-head checks from merge-tree evidence")
+	}
+}
+
 func TestStackLifecycleVariantsProveDesiredRevisionConvergence(t *testing.T) {
 	for _, test := range []struct {
 		name     string
