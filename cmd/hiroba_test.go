@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -50,6 +52,250 @@ func TestHirobaInitFullAppOffline(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "Scaffolded Hiroba app") {
 		t.Errorf("unexpected output: %s", out)
+	}
+}
+
+func stackScaffoldBindingScript(t *testing.T) string {
+	t.Helper()
+	contents, err := os.ReadFile(filepath.Join("..", ".github", "workflows", "stack-scaffold.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(string(contents), "\n")
+	bindingStep, uploadStep := -1, -1
+	for index, line := range lines {
+		if strings.TrimSpace(line) == "- name: Bind generator and generated fixture identities" {
+			bindingStep = index
+		}
+		if uploadStep == -1 && strings.Contains(line, "- uses: actions/upload-artifact@") {
+			uploadStep = index
+		}
+	}
+	if bindingStep == -1 {
+		t.Fatal("stack scaffold workflow is missing the generator identity binding step")
+	}
+	if uploadStep == -1 || bindingStep > uploadStep {
+		t.Fatalf("identity binding step must precede artifact upload (binding=%d upload=%d)", bindingStep, uploadStep)
+	}
+	always, runBlock := false, -1
+	for index := bindingStep + 1; index < uploadStep; index++ {
+		trimmed := strings.TrimSpace(lines[index])
+		if trimmed == "if: always()" {
+			always = true
+		}
+		if trimmed == "run: |" {
+			runBlock = index
+			break
+		}
+	}
+	if !always {
+		t.Fatal("identity binding step must run with if:always()")
+	}
+	if runBlock == -1 {
+		t.Fatal("identity binding step has no inline run block")
+	}
+	header := strings.Join(lines[bindingStep:runBlock], "\n")
+	if !strings.Contains(header, "GENERATOR_SOURCE_SHA: ${{ github.sha }}") {
+		t.Fatal("identity binding step must receive the tested generator merge SHA from github.sha")
+	}
+	runIndent := leadingSpaceCount(lines[runBlock])
+	contentIndent := -1
+	scriptLines := []string{}
+	for index := runBlock + 1; index < uploadStep; index++ {
+		line := lines[index]
+		if strings.TrimSpace(line) == "" {
+			scriptLines = append(scriptLines, "")
+			continue
+		}
+		indent := leadingSpaceCount(line)
+		if indent <= runIndent {
+			break
+		}
+		if contentIndent == -1 {
+			contentIndent = indent
+		}
+		if indent < contentIndent {
+			t.Fatalf("malformed inline binding script indentation at workflow line %d", index+1)
+		}
+		scriptLines = append(scriptLines, line[contentIndent:])
+	}
+	script := strings.Join(scriptLines, "\n")
+	if strings.TrimSpace(script) == "" {
+		t.Fatal("identity binding inline run block is empty")
+	}
+	return script + "\n"
+}
+
+func leadingSpaceCount(line string) int {
+	return len(line) - len(strings.TrimLeft(line, " "))
+}
+
+func newStackBindingFixture(t *testing.T) (string, string, string) {
+	t.Helper()
+	runnerTemp := t.TempDir()
+	fixture := filepath.Join(runnerTemp, "qa-kro")
+	if err := os.MkdirAll(filepath.Join(fixture, "evidence"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	runStackBindingGit(t, fixture, "init", "-q")
+	runStackBindingGit(t, fixture, "config", "user.name", "Generated QA")
+	runStackBindingGit(t, fixture, "config", "user.email", "generated-qa@example.invalid")
+	if err := os.WriteFile(filepath.Join(fixture, "fixture.txt"), []byte("generated fixture\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	runStackBindingGit(t, fixture, "add", "--", "fixture.txt")
+	runStackBindingGit(t, fixture, "commit", "-qm", "generated chartless KRO fixture")
+	generatedSha := runStackBindingGit(t, fixture, "rev-parse", "HEAD")
+	return runnerTemp, filepath.Join(fixture, "evidence", "stack-lifecycle.json"), generatedSha
+}
+
+func runStackBindingGit(t *testing.T, directory string, args ...string) string {
+	t.Helper()
+	command := exec.Command("git", append([]string{"-C", directory}, args...)...)
+	output, err := command.CombinedOutput()
+	if err != nil {
+		t.Fatalf("git %v: %v\n%s", args, err, output)
+	}
+	return strings.TrimSpace(string(output))
+}
+
+func stackBindingEvidence(sourceSha string) map[string]any {
+	return map[string]any{
+		"schema":             "inari.lane-result.v1",
+		"lane":               "stack-lifecycle",
+		"status":             "passed",
+		"sourceSha":          sourceSha,
+		"workflowSha":        strings.Repeat("b", 40),
+		"runId":              "123",
+		"runAttempt":         "1",
+		"covers":             []any{"packages/observability-pack"},
+		"phases":             []any{map[string]any{"phase": "install", "converged": true}},
+		"clusterCreateCount": 1,
+		"clusterDeleteCount": 1,
+		"freshState":         true,
+		"cleanedUp":          true,
+		"functionalE2E":      false,
+		"deployedReadiness":  "not-tested",
+		"unrelated":          map[string]any{"nested": []any{"preserve", 42}},
+	}
+}
+
+func writeStackBindingEvidence(t *testing.T, path string, evidence map[string]any) []byte {
+	t.Helper()
+	contents, err := json.MarshalIndent(evidence, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	contents = append(contents, '\n')
+	if err := os.WriteFile(path, contents, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return contents
+}
+
+func readStackBindingEvidence(t *testing.T, path string) map[string]any {
+	t.Helper()
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var evidence map[string]any
+	if err := json.Unmarshal(contents, &evidence); err != nil {
+		t.Fatal(err)
+	}
+	return evidence
+}
+
+func executeStackBindingScript(script, runnerTemp, generatorSha string) ([]byte, error) {
+	command := exec.Command("bash", "-c", script)
+	command.Env = []string{
+		"PATH=" + os.Getenv("PATH"),
+		"HOME=" + os.Getenv("HOME"),
+		"RUNNER_TEMP=" + runnerTemp,
+		"GENERATOR_SOURCE_SHA=" + generatorSha,
+	}
+	return command.CombinedOutput()
+}
+
+func assertNoBindingTemporaryFiles(t *testing.T, evidencePath string) {
+	t.Helper()
+	leftovers, err := filepath.Glob(evidencePath + ".binding.*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(leftovers) != 0 {
+		t.Fatalf("identity binding left temporary files: %v", leftovers)
+	}
+}
+
+func TestStackScaffoldBindingScriptPreservesBothIdentities(t *testing.T) {
+	script := stackScaffoldBindingScript(t)
+	runnerTemp, evidencePath, generatedSha := newStackBindingFixture(t)
+	writeStackBindingEvidence(t, evidencePath, stackBindingEvidence(generatedSha))
+	original := readStackBindingEvidence(t, evidencePath)
+	if _, exists := original["generatedSourceSha"]; exists {
+		t.Fatal("test fixture unexpectedly starts with generatedSourceSha")
+	}
+	delete(original, "sourceSha")
+	generatorSha := strings.Repeat("a", 40)
+	output, err := executeStackBindingScript(script, runnerTemp, generatorSha)
+	if err != nil {
+		t.Fatalf("identity binding failed: %v\n%s", err, output)
+	}
+	got := readStackBindingEvidence(t, evidencePath)
+	if got["sourceSha"] != generatorSha {
+		t.Errorf("sourceSha = %v, want generator merge SHA %s", got["sourceSha"], generatorSha)
+	}
+	if got["generatedSourceSha"] != generatedSha {
+		t.Errorf("generatedSourceSha = %v, want generated fixture HEAD %s", got["generatedSourceSha"], generatedSha)
+	}
+	delete(got, "sourceSha")
+	delete(got, "generatedSourceSha")
+	if !reflect.DeepEqual(got, original) {
+		t.Errorf("identity binding changed unrelated evidence:\n got: %#v\nwant: %#v", got, original)
+	}
+	assertNoBindingTemporaryFiles(t, evidencePath)
+}
+
+func TestStackScaffoldBindingScriptRejectsInvalidEvidence(t *testing.T) {
+	script := stackScaffoldBindingScript(t)
+	for _, test := range []struct {
+		name          string
+		generatorSha  string
+		writeEvidence bool
+		mutate        func(map[string]any)
+	}{
+		{name: "missing evidence", generatorSha: strings.Repeat("a", 40), mutate: func(map[string]any) {}},
+		{name: "missing sourceSha", generatorSha: strings.Repeat("a", 40), writeEvidence: true, mutate: func(evidence map[string]any) { delete(evidence, "sourceSha") }},
+		{name: "mismatched original source", generatorSha: strings.Repeat("a", 40), writeEvidence: true, mutate: func(evidence map[string]any) { evidence["sourceSha"] = strings.Repeat("c", 40) }},
+		{name: "invalid original source", generatorSha: strings.Repeat("a", 40), writeEvidence: true, mutate: func(evidence map[string]any) { evidence["sourceSha"] = "not-a-sha" }},
+		{name: "invalid generator source", generatorSha: "not-a-sha", writeEvidence: true, mutate: func(map[string]any) {}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			runnerTemp, evidencePath, generatedSha := newStackBindingFixture(t)
+			evidence := stackBindingEvidence(generatedSha)
+			test.mutate(evidence)
+			var before []byte
+			if test.writeEvidence {
+				before = writeStackBindingEvidence(t, evidencePath, evidence)
+			}
+			output, err := executeStackBindingScript(script, runnerTemp, test.generatorSha)
+			if err == nil {
+				t.Fatalf("invalid evidence unexpectedly succeeded:\n%s", output)
+			}
+			if test.writeEvidence {
+				after, readErr := os.ReadFile(evidencePath)
+				if readErr != nil {
+					t.Fatal(readErr)
+				}
+				if !bytes.Equal(after, before) {
+					t.Fatalf("failed identity binding rewrote evidence:\n before: %s\n  after: %s", before, after)
+				}
+			} else if _, statErr := os.Stat(evidencePath); !os.IsNotExist(statErr) {
+				t.Fatalf("missing evidence was created by failed binding: %v", statErr)
+			}
+			assertNoBindingTemporaryFiles(t, evidencePath)
+		})
 	}
 }
 
