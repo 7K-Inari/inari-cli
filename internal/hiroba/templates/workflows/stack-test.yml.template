@@ -1,0 +1,9 @@
+name: stack lifecycle
+on: {pull_request: {branches: [main]}}
+permissions: {contents: read}
+jobs:
+  stack:
+    uses: 7K-Hiroba/workflows/.github/workflows/test-stack.yml@__WORKFLOWS_V1_SHA__ # __WORKFLOWS_VERSION__
+    # The PR check remains associated with the head; the default checkout binds
+    # evidence to the exact merge tree (or push SHA) being tested.
+    with: {root: .}

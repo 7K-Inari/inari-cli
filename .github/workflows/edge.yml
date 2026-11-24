@@ -1,12 +1,13 @@
 name: edge
 
-# Per-merge edge releases: every push to main builds the CLI with goreleaser
-# (snapshot mode — no brew/scoop/AUR publishing) and attaches the archives
-# to a GitHub prerelease vX.Y.Z-<sha>. Skipped on release merges —
-# release.yml covers that commit.
+# Manual-only edge releases: this workflow is decoupled from ordinary merges
+# and runs exclusively via workflow_dispatch. When dispatched it builds the
+# CLI with goreleaser (snapshot mode — no brew/scoop/AUR publishing) and
+# attaches the archives to a GitHub prerelease vX.Y.Z-<sha>. Stable releases
+# are covered by release.yml; dispatching this workflow is a separate explicit
+# decision and is never triggered by a merge.
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write

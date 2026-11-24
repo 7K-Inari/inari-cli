@@ -57,13 +57,13 @@ Every command supports `-o table|json|yaml` and a genuinely helpful `--help`.
 ## Hiroba community scaffolding
 
 ```sh
-inari hiroba init my-service
-inari hiroba init my-service --type app --with-plugin --with-ui --with-chart --with-observability --with-runtime-smoke
-inari hiroba init my-catalog --type catalog --with-observability
-inari hiroba init my-template --type template --with-runtime-smoke
+inari hiroba init my-service --archetype non-stack
+inari hiroba init my-service --type app --archetype stack --with-plugin --with-ui --with-chart --with-observability --with-runtime-smoke
+inari hiroba init my-catalog --type catalog --archetype non-stack --with-observability
+inari hiroba init my-template --type template --archetype non-stack --with-runtime-smoke
 ```
 
-`--type` selects `app`, `extension`, `catalog`, or `template`; `--dir` chooses the parent and `--module` overrides the Go module. Every boolean component combination is supported. Observability always includes canonical assets, full signed package metadata, and the v2 companion pack, with chart-native output only when `--with-chart` is selected. Component templates can carry a confined `observability.manifest` declaration. Runtime smoke uses the actual chart through its generic image declaration or, without a chart, a meaningful CI-only fixture under `tests/smoke` without adding an application component. Long registry IDs receive deterministic hash-suffixed Helm/resource names where needed, without changing the permanent app or publication identity.
+`--type` selects `app`, `extension`, `catalog`, or `template`; `--dir` chooses the parent and `--module` overrides the Go module. `--archetype stack|non-stack` is required and never inferred from components. Every boolean component combination is supported for both archetypes. Stack scaffolds always include the shared install+same-cluster-upgrade lane; non-stack scaffolds never emit it. No archetype silently adds a component. Observability always includes canonical assets, full signed package metadata, and the v2 companion pack, with chart-native output only when `--with-chart` is selected. Component templates can carry a confined `observability.manifest` declaration. Runtime smoke uses the actual chart through its generic image declaration or, without a chart, a meaningful CI-only fixture under `tests/smoke` without adding an application component. Long registry IDs receive deterministic hash-suffixed Helm/resource names where needed, without changing the permanent app or publication identity.
 
 Generated workflow callers use full signed-release commit SHAs and version comments, never mutable branches or major-version tags. Package examples use canonical `<source>/<package>` identities. New scaffolds declare kind-qualified `releaseComponents` so same-named packages, templates, charts, and standalone smoke suites have unique signed Release tags; backend and UI compatibility evidence and publication also work independently. The app ID `observability-pack` is reserved for the canonical companion package. Fixture-only suites are machine-marked as CI-only and ineligible for reviewed/official application evidence or real stage/prod verification.
 

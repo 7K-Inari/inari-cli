@@ -21,10 +21,15 @@ type goldenFile struct {
 
 type goldenTree map[string]goldenFile
 
-func matrixOptions(kind string, mask int) Options {
+func matrixOptions(kind string, mask int, archetype ...string) Options {
+	selectedArchetype := "non-stack"
+	if len(archetype) > 0 {
+		selectedArchetype = archetype[0]
+	}
 	return Options{
 		Name:              "matrix-app",
 		Type:              kind,
+		Archetype:         selectedArchetype,
 		WithPlugin:        mask&1 != 0,
 		WithUI:            mask&2 != 0,
 		WithChart:         mask&4 != 0,
@@ -64,139 +69,223 @@ func readTree(t *testing.T, root string) goldenTree {
 	return result
 }
 
-func goldenPath(kind string, mask int) string {
-	return filepath.Join("testdata", "golden", fmt.Sprintf("%s-%02d.json", kind, mask))
+func goldenPath(kind string, mask int, archetype ...string) string {
+	key := fmt.Sprintf("%s-%02d", kind, mask)
+	if len(archetype) > 0 && archetype[0] == "stack" {
+		key = fmt.Sprintf("%s-stack-%02d", kind, mask)
+	}
+	return filepath.Join("testdata", "golden", key+".json")
 }
 
 func TestScaffoldFullMatrixGolden(t *testing.T) {
 	for _, kind := range []string{"app", "extension", "catalog", "template"} {
-		for mask := 0; mask < 32; mask++ {
-			t.Run(fmt.Sprintf("%s/%02d", kind, mask), func(t *testing.T) {
-				opts := matrixOptions(kind, mask)
-				target := filepath.Join(t.TempDir(), opts.Name)
-				if err := Scaffold(target, opts); err != nil {
-					t.Fatalf("valid option combination failed: %v", err)
-				}
-				actual := readTree(t, target)
-				golden := goldenPath(kind, mask)
-				if os.Getenv("HIROBA_UPDATE_GOLDEN") == "1" {
-					data, err := json.MarshalIndent(actual, "", "  ")
+		for _, archetype := range []string{"non-stack", "stack"} {
+			for mask := 0; mask < 32; mask++ {
+				t.Run(fmt.Sprintf("%s/%s/%02d", kind, archetype, mask), func(t *testing.T) {
+					opts := matrixOptions(kind, mask, archetype)
+					target := filepath.Join(t.TempDir(), opts.Name)
+					if err := Scaffold(target, opts); err != nil {
+						t.Fatalf("valid option combination failed: %v", err)
+					}
+					actual := readTree(t, target)
+					golden := goldenPath(kind, mask, archetype)
+					if os.Getenv("HIROBA_UPDATE_GOLDEN") == "1" {
+						data, err := json.MarshalIndent(actual, "", "  ")
+						if err != nil {
+							t.Fatal(err)
+						}
+						data = append(data, '\n')
+						if err := os.MkdirAll(filepath.Dir(golden), 0o755); err != nil {
+							t.Fatal(err)
+						}
+						if err := os.WriteFile(golden, data, 0o644); err != nil {
+							t.Fatal(err)
+						}
+						return
+					}
+					data, err := os.ReadFile(golden)
 					if err != nil {
+						t.Fatalf("read golden: %v", err)
+					}
+					var expected goldenTree
+					if err := json.Unmarshal(data, &expected); err != nil {
 						t.Fatal(err)
 					}
-					data = append(data, '\n')
-					if err := os.MkdirAll(filepath.Dir(golden), 0o755); err != nil {
-						t.Fatal(err)
+					if !reflect.DeepEqual(actual, expected) {
+						keys := make([]string, 0, len(actual))
+						for key := range actual {
+							keys = append(keys, key)
+						}
+						sort.Strings(keys)
+						t.Fatalf("generated tree differs from golden; files: %s", strings.Join(keys, ", "))
 					}
-					if err := os.WriteFile(golden, data, 0o644); err != nil {
-						t.Fatal(err)
-					}
-					return
-				}
-				data, err := os.ReadFile(golden)
-				if err != nil {
-					t.Fatalf("read golden: %v", err)
-				}
-				var expected goldenTree
-				if err := json.Unmarshal(data, &expected); err != nil {
-					t.Fatal(err)
-				}
-				if !reflect.DeepEqual(actual, expected) {
-					keys := make([]string, 0, len(actual))
-					for key := range actual {
-						keys = append(keys, key)
-					}
-					sort.Strings(keys)
-					t.Fatalf("generated tree differs from golden; files: %s", strings.Join(keys, ", "))
-				}
-			})
+				})
+			}
 		}
 	}
 }
 
 func TestFullMatrixContentContracts(t *testing.T) {
 	for _, kind := range []string{"app", "extension", "catalog", "template"} {
-		for mask := 0; mask < 32; mask++ {
-			opts := matrixOptions(kind, mask)
-			target := filepath.Join(t.TempDir(), opts.Name)
-			if err := Scaffold(target, opts); err != nil {
-				t.Fatalf("%s mask %d: %v", kind, mask, err)
-			}
-			tree := readTree(t, target)
-			assertReleaseContract(t, opts, tree)
-			for path, file := range tree {
-				if strings.Contains(file.Content, "__WORKFLOWS_V1_SHA__") || strings.Contains(file.Content, "__HIROBA_NAME__") {
-					t.Errorf("%s mask %d %s contains an unresolved placeholder", kind, mask, path)
+		for _, archetype := range []string{"non-stack", "stack"} {
+			for mask := 0; mask < 32; mask++ {
+				opts := matrixOptions(kind, mask, archetype)
+				target := filepath.Join(t.TempDir(), opts.Name)
+				if err := Scaffold(target, opts); err != nil {
+					t.Fatalf("%s mask %d: %v", kind, mask, err)
 				}
-				if strings.Contains(file.Content, "@v1\n") || strings.Contains(file.Content, "@main") {
-					t.Errorf("%s mask %d %s contains a mutable workflow ref", kind, mask, path)
-				}
-			}
-			if opts.WithObservability {
-				if kind == "app" || kind == "catalog" {
-					if _, ok := tree["packages/matrix-app/observability.yaml"]; !ok {
-						t.Errorf("%s mask %d omitted full package observability metadata", kind, mask)
+				tree := readTree(t, target)
+				assertReleaseContract(t, opts, tree)
+				if opts.Archetype == "stack" {
+					for _, path := range []string{"tests/stack/suite.yaml", "tests/stack/install.sh", "tests/stack/upgrade.sh", ".github/workflows/stack-test.yml"} {
+						if _, ok := tree[path]; !ok {
+							t.Errorf("%s mask %d omitted stack lifecycle %s", kind, optionMask(opts), path)
+						}
+					}
+					if !strings.Contains(tree[".hiroba.yaml"].Content, "archetype: stack") || !strings.Contains(tree[".hiroba.yaml"].Content, "stackTest:") {
+						t.Errorf("%s mask %d omitted mandatory stackTest declaration", kind, optionMask(opts))
+					}
+				} else {
+					for path := range tree {
+						if strings.HasPrefix(path, "tests/stack/") || path == ".github/workflows/stack-test.yml" {
+							t.Errorf("%s mask %d emitted non-stack lifecycle %s", kind, optionMask(opts), path)
+						}
+					}
+					if !strings.Contains(tree[".hiroba.yaml"].Content, "archetype: non-stack") || strings.Contains(tree[".hiroba.yaml"].Content, "stackTest:") {
+						t.Errorf("%s mask %d did not explicitly disable stack lifecycle", kind, optionMask(opts))
 					}
 				}
-				if kind == "app" || kind == "template" {
-					if _, ok := tree["templates/matrix-app/observability/observability.yaml"]; !ok {
-						t.Errorf("%s mask %d omitted template observability metadata", kind, mask)
+				for path, file := range tree {
+					if strings.Contains(file.Content, "__WORKFLOWS_V1_SHA__") || strings.Contains(file.Content, "__HIROBA_NAME__") {
+						t.Errorf("%s mask %d %s contains an unresolved placeholder", kind, mask, path)
 					}
-					manifest := tree["templates/matrix-app/template.yaml"].Content
-					if !strings.Contains(manifest, "manifest: observability/observability.yaml") {
-						t.Errorf("%s mask %d omitted template observability declaration", kind, mask)
-					}
-				}
-			}
-			if !opts.WithObservability && (kind == "app" || kind == "catalog") {
-				for _, path := range []string{"packages/matrix-app/package.yaml", "catalog.yaml"} {
-					if strings.Contains(tree[path].Content, "observability-pack") {
-						t.Errorf("%s mask %d references an unselected observability pack in %s", kind, mask, path)
+					if strings.Contains(file.Content, "@v1\n") || strings.Contains(file.Content, "@main") {
+						t.Errorf("%s mask %d %s contains a mutable workflow ref", kind, mask, path)
 					}
 				}
-			}
-			if opts.WithObservability && !opts.WithChart {
-				if _, ok := tree["packages/observability-pack/rgd.yaml"]; !ok {
-					t.Errorf("%s mask %d omitted chartless observability pack", kind, mask)
-				}
-				for path := range tree {
-					if strings.HasPrefix(path, "charts/") {
-						t.Errorf("%s mask %d emitted phantom chart %s", kind, mask, path)
+				if opts.WithObservability {
+					if kind == "app" || kind == "catalog" {
+						if _, ok := tree["packages/matrix-app/observability.yaml"]; !ok {
+							t.Errorf("%s mask %d omitted full package observability metadata", kind, mask)
+						}
+					}
+					if kind == "app" || kind == "template" {
+						if _, ok := tree["templates/matrix-app/observability/observability.yaml"]; !ok {
+							t.Errorf("%s mask %d omitted template observability metadata", kind, mask)
+						}
+						manifest := tree["templates/matrix-app/template.yaml"].Content
+						if !strings.Contains(manifest, "manifest: observability/observability.yaml") {
+							t.Errorf("%s mask %d omitted template observability declaration", kind, mask)
+						}
 					}
 				}
-			}
-			if opts.WithRuntimeSmoke && !opts.WithChart {
-				suite := tree["tests/smoke/suite.yaml"].Content
-				for _, expected := range []string{"kind: manifests", "fixtureOnly: true", "executableProfiles: [ci]", "id: matrix-app-smoke"} {
-					if !strings.Contains(suite, expected) {
-						t.Errorf("%s mask %d suite missing %q", kind, mask, expected)
+				if !opts.WithObservability && (kind == "app" || kind == "catalog") {
+					for _, path := range []string{"packages/matrix-app/package.yaml", "catalog.yaml"} {
+						if strings.Contains(tree[path].Content, "observability-pack") {
+							t.Errorf("%s mask %d references an unselected observability pack in %s", kind, mask, path)
+						}
 					}
 				}
-				if _, ok := tree["tests/smoke/fixtures/app/deployment.yaml"]; !ok {
-					t.Errorf("%s mask %d omitted chartless smoke fixture", kind, mask)
-				}
-			}
-			if opts.WithRuntimeSmoke && opts.WithChart {
-				suite := tree["tests/smoke/suite.yaml"].Content
-				if !strings.Contains(suite, "kind: helm") || !strings.Contains(suite, "component: charts/matrix-app") {
-					t.Errorf("%s mask %d did not select helm adapter", kind, mask)
-				}
-			}
-			if opts.WithChart {
-				for _, path := range []string{"ci/ct.yaml", "ci/chart_schema.yaml", "ci/lintconf.yaml"} {
-					if _, ok := tree[path]; !ok {
-						t.Errorf("%s mask %d omitted chart test config %s", kind, mask, path)
+				if opts.WithObservability && !opts.WithChart {
+					if _, ok := tree["packages/observability-pack/rgd.yaml"]; !ok {
+						t.Errorf("%s mask %d omitted chartless observability pack", kind, mask)
+					}
+					for path := range tree {
+						if strings.HasPrefix(path, "charts/") {
+							t.Errorf("%s mask %d emitted phantom chart %s", kind, mask, path)
+						}
 					}
 				}
-			}
-			if !opts.WithPlugin && kind != "extension" {
-				for path := range tree {
-					if strings.HasPrefix(path, "extension/") {
-						t.Errorf("%s mask %d unexpectedly added plugin %s", kind, mask, path)
+				if opts.WithRuntimeSmoke && !opts.WithChart {
+					suite := tree["tests/smoke/suite.yaml"].Content
+					for _, expected := range []string{"kind: manifests", "fixtureOnly: true", "executableProfiles: [ci]", "id: matrix-app-smoke"} {
+						if !strings.Contains(suite, expected) {
+							t.Errorf("%s mask %d suite missing %q", kind, mask, expected)
+						}
+					}
+					if _, ok := tree["tests/smoke/fixtures/app/deployment.yaml"]; !ok {
+						t.Errorf("%s mask %d omitted chartless smoke fixture", kind, mask)
+					}
+				}
+				if opts.WithRuntimeSmoke && opts.WithChart {
+					suite := tree["tests/smoke/suite.yaml"].Content
+					if !strings.Contains(suite, "kind: helm") || !strings.Contains(suite, "component: charts/matrix-app") {
+						t.Errorf("%s mask %d did not select helm adapter", kind, mask)
+					}
+				}
+				if opts.WithChart {
+					for _, path := range []string{"ci/ct.yaml", "ci/chart_schema.yaml", "ci/lintconf.yaml"} {
+						if _, ok := tree[path]; !ok {
+							t.Errorf("%s mask %d omitted chart test config %s", kind, mask, path)
+						}
+					}
+				}
+				if !opts.WithPlugin && kind != "extension" {
+					for path := range tree {
+						if strings.HasPrefix(path, "extension/") {
+							t.Errorf("%s mask %d unexpectedly added plugin %s", kind, mask, path)
+						}
 					}
 				}
 			}
 		}
+	}
+}
+
+func TestStackCallerDocumentsMergeTreeEvidence(t *testing.T) {
+	target := filepath.Join(t.TempDir(), "matrix-app")
+	if err := Scaffold(target, Options{Name: "matrix-app", Type: "app", Archetype: "stack"}); err != nil {
+		t.Fatal(err)
+	}
+	caller := readTree(t, target)[".github/workflows/stack-test.yml"].Content
+	if !strings.Contains(caller, "merge tree") || !strings.Contains(caller, "associated with the head") {
+		t.Fatalf("stack caller does not distinguish PR-head checks from merge-tree evidence")
+	}
+}
+
+func TestStackLifecycleVariantsProveDesiredRevisionConvergence(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		opts     Options
+		expected []string
+	}{
+		{
+			name: "kro",
+			opts: Options{Name: "matrix-app", Type: "catalog", Archetype: "stack", WithObservability: true},
+			expected: []string{
+				`folder = next(resource for resource in data["spec"]["resources"] if resource["id"] == "folder")`,
+				`folder["template"]["metadata"].setdefault("annotations", {})["inari.dev/ci-revision"] = phase`,
+				`test "$revision" = "$HIROBA_STACK_PHASE"`,
+			},
+		},
+		{
+			name: "manifests",
+			opts: Options{Name: "matrix-app", Type: "template", Archetype: "stack"},
+			expected: []string{
+				`data["spec"]["template"]["metadata"].setdefault("annotations", {})["inari.dev/ci-revision"] = phase`,
+				`kubectl rollout status deployment/matrix-app-fixture -n default --timeout=120s`,
+				`.spec.template.metadata.annotations.inari\.dev/ci-revision`,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			target := filepath.Join(t.TempDir(), test.opts.Name)
+			if err := Scaffold(target, test.opts); err != nil {
+				t.Fatal(err)
+			}
+			tree := readTree(t, target)
+			for _, phase := range []string{"install", "upgrade"} {
+				content := tree["tests/stack/"+phase+".sh"].Content
+				for _, expected := range test.expected {
+					if !strings.Contains(content, expected) {
+						t.Errorf("%s phase is missing convergence assertion %q", phase, expected)
+					}
+				}
+				if strings.Contains(content, `data["metadata"].setdefault`) {
+					t.Errorf("%s phase still changes only top-level metadata", phase)
+				}
+			}
+		})
 	}
 }
 
@@ -218,7 +307,7 @@ func TestScaffoldMaxNameUsesBoundedRuntimeIdentifiers(t *testing.T) {
 	name := "a" + strings.Repeat("b", 61) + "c"
 	t.Run("helm", func(t *testing.T) {
 		target := filepath.Join(t.TempDir(), name)
-		opts := Options{Name: name, Type: "catalog", WithChart: true, WithRuntimeSmoke: true}
+		opts := Options{Name: name, Archetype: "non-stack", Type: "catalog", WithChart: true, WithRuntimeSmoke: true}
 		if err := Scaffold(target, opts); err != nil {
 			t.Fatal(err)
 		}
@@ -237,7 +326,7 @@ func TestScaffoldMaxNameUsesBoundedRuntimeIdentifiers(t *testing.T) {
 
 	t.Run("manifests", func(t *testing.T) {
 		target := filepath.Join(t.TempDir(), name)
-		opts := Options{Name: name, Type: "template", WithRuntimeSmoke: true}
+		opts := Options{Name: name, Archetype: "non-stack", Type: "template", WithRuntimeSmoke: true}
 		if err := Scaffold(target, opts); err != nil {
 			t.Fatal(err)
 		}
@@ -348,7 +437,7 @@ func TestScaffoldRefusesExistingBrokenSymlink(t *testing.T) {
 	if err := os.Symlink(filepath.Join(parent, "missing"), target); err != nil {
 		t.Skipf("symlinks are unavailable: %v", err)
 	}
-	if err := Scaffold(target, Options{Name: "matrix-app", Type: "app"}); err == nil || !strings.Contains(err.Error(), "already exists") {
+	if err := Scaffold(target, Options{Name: "matrix-app", Type: "app", Archetype: "non-stack"}); err == nil || !strings.Contains(err.Error(), "already exists") {
 		t.Fatalf("existing symlink error = %v, want already exists", err)
 	}
 	if _, err := os.Lstat(target); err != nil {
@@ -364,7 +453,7 @@ func TestScaffoldConcurrentSameTarget(t *testing.T) {
 	for range 2 {
 		go func() {
 			<-start
-			results <- Scaffold(target, Options{Name: "matrix-app", Type: "app"})
+			results <- Scaffold(target, Options{Name: "matrix-app", Type: "app", Archetype: "non-stack"})
 		}()
 	}
 	close(start)
@@ -390,7 +479,7 @@ func TestScaffoldConcurrentSameTarget(t *testing.T) {
 }
 
 func TestNormalizeOptionsRejectsReservedObservabilityPack(t *testing.T) {
-	_, err := normalizeOptions(Options{Name: "observability-pack", Type: "catalog", WithObservability: true})
+	_, err := normalizeOptions(Options{Name: "observability-pack", Type: "catalog", Archetype: "non-stack", WithObservability: true})
 	if err == nil || !strings.Contains(err.Error(), "reserved") {
 		t.Fatalf("reserved observability-pack name error = %v", err)
 	}
@@ -409,7 +498,7 @@ func TestAddTreeRejectsDuplicateDestination(t *testing.T) {
 func TestNormalizeOptionsModulePaths(t *testing.T) {
 	for _, module := range []string{"", "github.com/7K-Hiroba/example", "example.com/foo/bar", "example.com/foo/v2"} {
 		t.Run("valid_"+module, func(t *testing.T) {
-			if _, err := normalizeOptions(Options{Name: "valid-name", Type: "extension", Module: module}); err != nil {
+			if _, err := normalizeOptions(Options{Name: "valid-name", Type: "extension", Archetype: "non-stack", Module: module}); err != nil {
 				t.Fatalf("valid module %q rejected: %v", module, err)
 			}
 		})
@@ -425,7 +514,7 @@ func TestNormalizeOptionsModulePaths(t *testing.T) {
 		"example.com/CON/bar",
 	} {
 		t.Run("invalid_"+module, func(t *testing.T) {
-			if _, err := normalizeOptions(Options{Name: "valid-name", Type: "extension", Module: module}); err == nil {
+			if _, err := normalizeOptions(Options{Name: "valid-name", Type: "extension", Archetype: "non-stack", Module: module}); err == nil {
 				t.Fatalf("invalid module %q accepted", module)
 			}
 		})

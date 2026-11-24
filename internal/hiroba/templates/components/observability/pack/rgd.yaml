@@ -48,6 +48,8 @@ spec:
         namespace: ${schema.spec.namespace}
         labels:
           grafana_dashboard: '1'
+        annotations:
+          inari.dev/folder: ${schema.spec.folder}
       data:
         __HIROBA_NAME__-overview.json: "{\n  \"panels\": [\n    {\n      \"datasource\"\
           : {\n        \"type\": \"prometheus\",\n        \"uid\": \"${\"${DS_PROMETHEUS}\"\
@@ -90,6 +92,25 @@ spec:
               app: __HIROBA_NAME__
             annotations:
               summary: Synthetic __HIROBA_NAME__ target is down
+    includeWhen:
+    - ${(schema.spec.render == "all" || schema.spec.render == "rules-central") &&
+      schema.spec.rulesCentral}
+  - id: rulesConfigCentral
+    template:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: ${schema.spec.app}-central-rules
+        namespace: ${schema.spec.namespace}
+        labels:
+          app.kubernetes.io/name: __HIROBA_NAME__
+          inari.dev/rule-evaluation: central
+      data:
+        central.yaml: "groups:\n- name: __HIROBA_NAME__\n  interval: 1m\n  rules:\n  -\
+          \ record: workflows_scaffold:up:sum\n    expr: sum(workflows_scaffold_up)\n\
+          \  - alert: WorkflowsScaffoldDown\n    expr: workflows_scaffold_up == 0\n\
+          \    for: 5m\n    labels:\n      severity: critical\n      app: __HIROBA_NAME__\n\
+          \    annotations:\n      summary: Synthetic __HIROBA_NAME__ target is down\n"
     includeWhen:
     - ${(schema.spec.render == "all" || schema.spec.render == "rules-central") &&
       schema.spec.rulesCentral}

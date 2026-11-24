@@ -9,6 +9,37 @@ import (
 	"testing"
 )
 
+func TestChartlessKROHasHostedLifecycleCoverage(t *testing.T) {
+	data, err := os.ReadFile("../../.github/workflows/stack-scaffold.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	for _, expected := range []string{
+		"permissions: {contents: read}",
+		"timeout-minutes: 45",
+		"hiroba init qa-kro",
+		"--type catalog --archetype stack --with-observability",
+		"run-stack-lifecycle.sh",
+		WorkflowSHA,
+		"generated-kro-lifecycle-evidence",
+	} {
+		if !strings.Contains(text, expected) {
+			t.Errorf("chartless KRO hosted lifecycle is missing %q", expected)
+		}
+	}
+}
+
+func TestExternalMatrixDocumentsExplicitTimeout(t *testing.T) {
+	data, err := os.ReadFile("../../CONTRIBUTING.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if count := strings.Count(string(data), "-timeout=30m"); count < 2 {
+		t.Fatalf("external matrix commands must include an explicit 30m timeout; found %d", count)
+	}
+}
+
 // TestVerifyWorkflowMatrix checks every generated tree against an external candidate or exact production checkout.
 func TestVerifyWorkflowMatrix(t *testing.T) {
 	if os.Getenv("HIROBA_VERIFY_MATRIX") != "1" {
@@ -30,34 +61,37 @@ func TestVerifyWorkflowMatrix(t *testing.T) {
 	}
 	python := filepath.Join(workflows, ".venv", "bin", "python")
 	for _, kind := range []string{"app", "extension", "catalog", "template"} {
-		for mask := 0; mask < 32; mask++ {
-			t.Run(fmt.Sprintf("%s/%02d", kind, mask), func(t *testing.T) {
-				opts := matrixOptions(kind, mask)
-				fixture := filepath.Join(t.TempDir(), opts.Name)
-				if err := Scaffold(fixture, opts); err != nil {
-					t.Fatal(err)
-				}
-				if output, err := exec.Command("git", "init", "-q", fixture).CombinedOutput(); err != nil {
-					t.Fatalf("initialize fixture: %v\n%s", err, output)
-				}
-				commands := [][]string{
-					{filepath.Join(workflows, "scripts", "check-workflow-pins.py"), "--root", fixture, "--require-rendered"},
-					{filepath.Join(workflows, "scripts", "validate-repository.py"), "--root", fixture},
-					{filepath.Join(workflows, "scripts", "build-indexes.py"), "--root", fixture, "--check"},
-					{filepath.Join(workflows, "scripts", "sync-release-please-config.py"), "--root", fixture, "--check"},
-					{filepath.Join(workflows, "scripts", "discover-components.py"), "--root", fixture, "--all"},
-					{filepath.Join(workflows, "scripts", "prepare-release-plan.py"), "--root", fixture, "--source-sha", strings.Repeat("a", 40), "--rehearsal"},
-				}
-				if opts.WithObservability {
-					commands = append(commands, []string{filepath.Join(workflows, "scripts", "render-observability.py"), "--root", fixture, "--check"})
-				}
-				for _, args := range commands {
-					command := exec.Command(python, args...)
-					if output, err := command.CombinedOutput(); err != nil {
-						t.Fatalf("%s: %v\n%s", filepath.Base(args[0]), err, output)
+		for _, archetype := range []string{"non-stack", "stack"} {
+			for mask := 0; mask < 32; mask++ {
+				t.Run(fmt.Sprintf("%s/%s/%02d", kind, archetype, mask), func(t *testing.T) {
+					opts := matrixOptions(kind, mask, archetype)
+					fixture := filepath.Join(t.TempDir(), opts.Name)
+					if err := Scaffold(fixture, opts); err != nil {
+						t.Fatal(err)
 					}
-				}
-			})
+					if output, err := exec.Command("git", "init", "-q", fixture).CombinedOutput(); err != nil {
+						t.Fatalf("initialize fixture: %v\n%s", err, output)
+					}
+					commands := [][]string{
+						{filepath.Join(workflows, "scripts", "check-workflow-pins.py"), "--root", fixture, "--require-rendered"},
+						{filepath.Join(workflows, "scripts", "validate-repository.py"), "--root", fixture},
+						{filepath.Join(workflows, "scripts", "build-indexes.py"), "--root", fixture, "--check"},
+						{filepath.Join(workflows, "scripts", "sync-release-please-config.py"), "--root", fixture, "--check"},
+						{filepath.Join(workflows, "scripts", "discover-components.py"), "--root", fixture, "--all"},
+						{filepath.Join(workflows, "scripts", "stack-test-config.py"), "--root", fixture},
+						{filepath.Join(workflows, "scripts", "prepare-release-plan.py"), "--root", fixture, "--source-sha", strings.Repeat("a", 40), "--rehearsal"},
+					}
+					if opts.WithObservability {
+						commands = append(commands, []string{filepath.Join(workflows, "scripts", "render-observability.py"), "--root", fixture, "--check"})
+					}
+					for _, args := range commands {
+						command := exec.Command(python, args...)
+						if output, err := command.CombinedOutput(); err != nil {
+							t.Fatalf("%s: %v\n%s", filepath.Base(args[0]), err, output)
+						}
+					}
+				})
+			}
 		}
 	}
 }
@@ -74,75 +108,77 @@ func TestPrepareCanonicalMatrix(t *testing.T) {
 	}
 	python := filepath.Join(workflows, ".venv", "bin", "python")
 	for _, kind := range []string{"app", "extension", "catalog", "template"} {
-		for mask := 0; mask < 32; mask++ {
-			opts := matrixOptions(kind, mask)
-			fixture := filepath.Join(t.TempDir(), opts.Name)
-			if err := Scaffold(fixture, opts); err != nil {
-				t.Fatal(err)
-			}
-			for _, script := range []string{"build-indexes.py", "sync-release-please-config.py"} {
-				command := exec.Command(python, filepath.Join(workflows, "scripts", script), "--root", fixture)
-				if output, err := command.CombinedOutput(); err != nil {
-					t.Fatalf("%s mask %d %s: %v\n%s", kind, mask, script, err, output)
+		for _, archetype := range []string{"non-stack", "stack"} {
+			for mask := 0; mask < 32; mask++ {
+				opts := matrixOptions(kind, mask, archetype)
+				fixture := filepath.Join(t.TempDir(), opts.Name)
+				if err := Scaffold(fixture, opts); err != nil {
+					t.Fatal(err)
 				}
-			}
-			if opts.WithObservability {
-				command := exec.Command(python, filepath.Join(workflows, "scripts", "render-observability.py"), "--root", fixture)
-				if output, err := command.CombinedOutput(); err != nil {
-					t.Fatalf("%s mask %d observability render: %v\n%s", kind, mask, err, output)
+				for _, script := range []string{"build-indexes.py", "sync-release-please-config.py"} {
+					command := exec.Command(python, filepath.Join(workflows, "scripts", script), "--root", fixture)
+					if output, err := command.CombinedOutput(); err != nil {
+						t.Fatalf("%s mask %d %s: %v\n%s", kind, mask, script, err, output)
+					}
 				}
-				canonicalOutputs := []string{"packages/observability-pack/rgd.yaml"}
-				if opts.Type == "app" || opts.Type == "catalog" {
-					canonicalOutputs = append(canonicalOutputs, "packages/matrix-app/observability.yaml")
+				if opts.WithObservability {
+					command := exec.Command(python, filepath.Join(workflows, "scripts", "render-observability.py"), "--root", fixture)
+					if output, err := command.CombinedOutput(); err != nil {
+						t.Fatalf("%s mask %d observability render: %v\n%s", kind, mask, err, output)
+					}
+					canonicalOutputs := []string{"packages/observability-pack/rgd.yaml"}
+					if opts.Type == "app" || opts.Type == "catalog" {
+						canonicalOutputs = append(canonicalOutputs, "packages/matrix-app/observability.yaml")
+					}
+					if opts.WithChart {
+						canonicalOutputs = append(canonicalOutputs,
+							"charts/matrix-app/templates/observability/dashboards.yaml",
+							"charts/matrix-app/templates/observability/rules.yaml",
+							"charts/matrix-app/inari/observability.yaml",
+						)
+					}
+					for _, outputPath := range canonicalOutputs {
+						data, err := os.ReadFile(filepath.Join(fixture, outputPath))
+						if err != nil {
+							t.Fatal(err)
+						}
+						text := strings.ReplaceAll(string(data), opts.Name, "__HIROBA_NAME__")
+						text = strings.ReplaceAll(text, pascalName(opts.Name), "__HIROBA_NAME_PASCAL__")
+						var templatePath string
+						switch outputPath {
+						case "packages/observability-pack/rgd.yaml":
+							templatePath = "templates/components/observability/pack/rgd.yaml"
+						case "packages/matrix-app/observability.yaml":
+							templatePath = "templates/components/observability/manifest/observability.yaml"
+						default:
+							templatePath = "templates/components/observability/chart/" + strings.TrimPrefix(outputPath, "charts/matrix-app/")
+						}
+						if err := os.WriteFile(templatePath, []byte(text), 0o644); err != nil {
+							t.Fatal(err)
+						}
+					}
+					command = exec.Command(python, filepath.Join(workflows, "scripts", "render-observability.py"), "--root", fixture, "--check")
+					if output, err := command.CombinedOutput(); err != nil {
+						t.Fatalf("%s mask %d observability drift: %v\n%s", kind, mask, err, output)
+					}
 				}
-				if opts.WithChart {
-					canonicalOutputs = append(canonicalOutputs,
-						"charts/matrix-app/templates/observability/dashboards.yaml",
-						"charts/matrix-app/templates/observability/rules.yaml",
-						"charts/matrix-app/inari/observability.yaml",
-					)
+				matrixDir := filepath.Join("templates", "matrix", matrixKey(opts))
+				if err := os.MkdirAll(matrixDir, 0o755); err != nil {
+					t.Fatal(err)
 				}
-				for _, outputPath := range canonicalOutputs {
-					data, err := os.ReadFile(filepath.Join(fixture, outputPath))
+				for _, name := range []string{"catalog.yaml", "templates.yaml", "release-please-config.json", ".release-please-manifest.json"} {
+					data, err := os.ReadFile(filepath.Join(fixture, name))
 					if err != nil {
 						t.Fatal(err)
 					}
-					text := strings.ReplaceAll(string(data), opts.Name, "__HIROBA_NAME__")
-					text = strings.ReplaceAll(text, pascalName(opts.Name), "__HIROBA_NAME_PASCAL__")
-					var templatePath string
-					switch outputPath {
-					case "packages/observability-pack/rgd.yaml":
-						templatePath = "templates/components/observability/pack/rgd.yaml"
-					case "packages/matrix-app/observability.yaml":
-						templatePath = "templates/components/observability/manifest/observability.yaml"
-					default:
-						templatePath = "templates/components/observability/chart/" + strings.TrimPrefix(outputPath, "charts/matrix-app/")
-					}
-					if err := os.WriteFile(templatePath, []byte(text), 0o644); err != nil {
+					text := string(data)
+					text = strings.ReplaceAll(text, opts.Name, "__HIROBA_NAME__")
+					if err := os.WriteFile(filepath.Join(matrixDir, name), []byte(text), 0o644); err != nil {
 						t.Fatal(err)
 					}
 				}
-				command = exec.Command(python, filepath.Join(workflows, "scripts", "render-observability.py"), "--root", fixture, "--check")
-				if output, err := command.CombinedOutput(); err != nil {
-					t.Fatalf("%s mask %d observability drift: %v\n%s", kind, mask, err, output)
-				}
+				fmt.Printf("prepared %s\n", matrixKey(opts))
 			}
-			matrixDir := filepath.Join("templates", "matrix", matrixKey(opts))
-			if err := os.MkdirAll(matrixDir, 0o755); err != nil {
-				t.Fatal(err)
-			}
-			for _, name := range []string{"catalog.yaml", "templates.yaml", "release-please-config.json", ".release-please-manifest.json"} {
-				data, err := os.ReadFile(filepath.Join(fixture, name))
-				if err != nil {
-					t.Fatal(err)
-				}
-				text := string(data)
-				text = strings.ReplaceAll(text, opts.Name, "__HIROBA_NAME__")
-				if err := os.WriteFile(filepath.Join(matrixDir, name), []byte(text), 0o644); err != nil {
-					t.Fatal(err)
-				}
-			}
-			fmt.Printf("prepared %s\n", matrixKey(opts))
 		}
 	}
 }

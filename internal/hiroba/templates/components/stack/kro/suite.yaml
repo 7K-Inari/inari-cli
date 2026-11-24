@@ -1,0 +1,7 @@
+schema: inari.stack-test.v1
+setupProfiles: [kro]
+covers:
+  - packages/observability-pack
+install: {script: install.sh, timeout: 5m}
+upgrade: {script: upgrade.sh, timeout: 5m}
+diagnostics: diagnostics.sh

@@ -1,0 +1,6 @@
+schema: inari.stack-test.v1
+__HIROBA_STACK_SETUP__covers:
+  - charts/__HIROBA_NAME__
+__HIROBA_STACK_PACK_COVER__install: {script: install.sh, timeout: 10m}
+upgrade: {script: upgrade.sh, timeout: 10m}
+diagnostics: diagnostics.sh
