@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: 7K-Hiroba/workflows
-          ref: 522c3530c94336249928f5a65a5a9f98c46bf540 # v1.1.0
+          ref: f092eab6bb07de64a2d6f2e35ac4c65fca794f76 # v2.0.3
           path: .hiroba/workflows
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with: {go-version: "1.26.3", cache: false}
@@ -46,7 +46,7 @@ jobs:
           git -C "$fixture" commit -qm "generated chartless KRO fixture"
       - name: Reconcile install and upgrade in one fresh cluster
         env:
-          WORKFLOW_SHA: 522c3530c94336249928f5a65a5a9f98c46bf540
+          WORKFLOW_SHA: f092eab6bb07de64a2d6f2e35ac4c65fca794f76
           HIROBA_CACHE_HIT: ${{ steps.cache.outputs.cache-hit }}
         run: .hiroba/workflows/scripts/run-stack-lifecycle.sh --root "$RUNNER_TEMP/qa-kro"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7

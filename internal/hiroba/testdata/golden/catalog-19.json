@@ -1,39 +1,39 @@
 {
   ".github/workflows/compat-nightly.yml": {
     "mode": 420,
-    "content": "name: compatibility nightly\non:\n  schedule: [{cron: \"17 4 * * *\"}]\n  workflow_dispatch: {}\npermissions: {contents: read}\njobs:\n  compat:\n    uses: 7K-Hiroba/workflows/.github/workflows/compat-check.yml@522c3530c94336249928f5a65a5a9f98c46bf540 # v1.1.0\n    with: {root: ., mode: nightly}\n    permissions: {contents: read, actions: read}\n  notify:\n    if: needs.compat.outputs.status == 'failure'\n    needs: [compat]\n    runs-on: ubuntu-latest\n    permissions: {contents: read, issues: write}\n    steps:\n      - name: Open or update one early-warning issue\n        env:\n          GH_TOKEN: \"${{ secrets.GITHUB_TOKEN }}\"\n          RUN_URL: \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"\n        run: |\n          number=$(gh issue list --state open --json number,title --jq '.[] | select(.title == \"[compat] edge incompatibility\") | .number' | head -n 1)\n          if [[ -n \"$number\" ]]; then gh issue comment \"$number\" --body \"Edge compatibility failed again: $RUN_URL\"; else gh issue create --title '[compat] edge incompatibility' --body \"Edge compatibility failed: $RUN_URL\"; fi\n"
+    "content": "name: compatibility nightly\non:\n  schedule: [{cron: \"17 4 * * *\"}]\n  workflow_dispatch: {}\npermissions: {contents: read}\njobs:\n  compat:\n    uses: 7K-Hiroba/workflows/.github/workflows/compat-check.yml@f092eab6bb07de64a2d6f2e35ac4c65fca794f76 # v2.0.3\n    with: {root: ., mode: nightly}\n    permissions: {contents: read, actions: read}\n  notify:\n    if: needs.compat.outputs.status == 'failure'\n    needs: [compat]\n    runs-on: ubuntu-latest\n    permissions: {contents: read, issues: write}\n    steps:\n      - name: Open or update one early-warning issue\n        env:\n          GH_TOKEN: \"${{ secrets.GITHUB_TOKEN }}\"\n          RUN_URL: \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"\n        run: |\n          number=$(gh issue list --state open --json number,title --jq '.[] | select(.title == \"[compat] edge incompatibility\") | .number' | head -n 1)\n          if [[ -n \"$number\" ]]; then gh issue comment \"$number\" --body \"Edge compatibility failed again: $RUN_URL\"; else gh issue create --title '[compat] edge incompatibility' --body \"Edge compatibility failed: $RUN_URL\"; fi\n"
   },
   ".github/workflows/compat-pr.yml": {
     "mode": 420,
-    "content": "name: compatibility PR\non: {pull_request: {branches: [main]}}\npermissions: {contents: read}\njobs:\n  compat:\n    uses: 7K-Hiroba/workflows/.github/workflows/compat-check.yml@522c3530c94336249928f5a65a5a9f98c46bf540 # v1.1.0\n    with: {root: ., mode: pr}\n"
+    "content": "name: compatibility PR\non: {pull_request: {branches: [main]}}\npermissions: {contents: read}\njobs:\n  compat:\n    uses: 7K-Hiroba/workflows/.github/workflows/compat-check.yml@f092eab6bb07de64a2d6f2e35ac4c65fca794f76 # v2.0.3\n    with: {root: ., mode: pr}\n"
   },
   ".github/workflows/edge.yml": {
     "mode": 420,
-    "content": "name: edge\non: {push: {branches: [main]}}\npermissions: {contents: read}\nconcurrency: {group: \"hiroba-release-${{ github.repository }}\", cancel-in-progress: false}\njobs:\n  edge:\n    uses: 7K-Hiroba/workflows/.github/workflows/edge.yml@522c3530c94336249928f5a65a5a9f98c46bf540 # v1.1.0\n    with: {root: .}\n    permissions: {contents: write, packages: write, id-token: write, attestations: write, actions: read, artifact-metadata: write}\n"
+    "content": "name: edge\non: {push: {branches: [main]}}\npermissions: {contents: read}\nconcurrency: {group: \"hiroba-release-${{ github.repository }}\", cancel-in-progress: false}\njobs:\n  edge:\n    uses: 7K-Hiroba/workflows/.github/workflows/edge.yml@f092eab6bb07de64a2d6f2e35ac4c65fca794f76 # v2.0.3\n    with: {root: .}\n    permissions: {contents: write, packages: write, id-token: write, attestations: write, actions: read, artifact-metadata: write}\n"
   },
   ".github/workflows/extension-ci.yml": {
     "mode": 420,
-    "content": "name: extension CI\non: {pull_request: {branches: [main]}}\npermissions: {contents: read}\njobs:\n  go:\n    uses: 7K-Hiroba/workflows/.github/workflows/ci-go-extension.yml@522c3530c94336249928f5a65a5a9f98c46bf540 # v1.1.0\n    with: {root: .}\n  ui:\n    uses: 7K-Hiroba/workflows/.github/workflows/ci-ui-extension.yml@522c3530c94336249928f5a65a5a9f98c46bf540 # v1.1.0\n    with: {root: .}\n"
+    "content": "name: extension CI\non: {pull_request: {branches: [main]}}\npermissions: {contents: read}\njobs:\n  go:\n    uses: 7K-Hiroba/workflows/.github/workflows/ci-go-extension.yml@f092eab6bb07de64a2d6f2e35ac4c65fca794f76 # v2.0.3\n    with: {root: .}\n  ui:\n    uses: 7K-Hiroba/workflows/.github/workflows/ci-ui-extension.yml@f092eab6bb07de64a2d6f2e35ac4c65fca794f76 # v2.0.3\n    with: {root: .}\n"
   },
   ".github/workflows/release-please.yml": {
     "mode": 420,
-    "content": "name: release-please\non: {push: {branches: [main]}}\npermissions: {contents: read}\njobs:\n  propose:\n    uses: 7K-Hiroba/workflows/.github/workflows/release-please.yml@522c3530c94336249928f5a65a5a9f98c46bf540 # v1.1.0\n    with: {root: ., app-id: \"${{ vars.HIROBA_RELEASE_APP_ID }}\"}\n    secrets:\n      release-private-key: \"${{ secrets.HIROBA_RELEASE_PRIVATE_KEY }}\"\n    permissions: {contents: write, pull-requests: write}\n"
+    "content": "name: release-please\non: {push: {branches: [main]}}\npermissions: {contents: read}\njobs:\n  propose:\n    uses: 7K-Hiroba/workflows/.github/workflows/release-please.yml@f092eab6bb07de64a2d6f2e35ac4c65fca794f76 # v2.0.3\n    with: {root: ., app-id: \"${{ vars.HIROBA_RELEASE_APP_ID }}\"}\n    secrets:\n      release-private-key: \"${{ secrets.HIROBA_RELEASE_PRIVATE_KEY }}\"\n    permissions: {contents: write, pull-requests: write}\n"
   },
   ".github/workflows/release.yml": {
     "mode": 420,
-    "content": "name: release\non:\n  push: {branches: [main]}\n  workflow_dispatch:\n    inputs: {repair_tag: {required: false, type: string}}\npermissions: {contents: read}\nconcurrency: {group: \"hiroba-release-${{ github.repository }}\", cancel-in-progress: false}\njobs:\n  release:\n    uses: 7K-Hiroba/workflows/.github/workflows/release.yml@522c3530c94336249928f5a65a5a9f98c46bf540 # v1.1.0\n    with: {root: ., repair_tag: \"${{ inputs.repair_tag }}\", app-id: \"${{ vars.HIROBA_RELEASE_APP_ID }}\"}\n    secrets:\n      release-private-key: \"${{ secrets.HIROBA_RELEASE_PRIVATE_KEY }}\"\n    permissions: {contents: write, packages: write, id-token: write, attestations: write, actions: read, artifact-metadata: write}\n"
+    "content": "name: release\non:\n  push: {branches: [main]}\n  workflow_dispatch:\n    inputs: {repair_tag: {required: false, type: string}}\npermissions: {contents: read}\nconcurrency: {group: \"hiroba-release-${{ github.repository }}\", cancel-in-progress: false}\njobs:\n  release:\n    uses: 7K-Hiroba/workflows/.github/workflows/release.yml@f092eab6bb07de64a2d6f2e35ac4c65fca794f76 # v2.0.3\n    with: {root: ., repair_tag: \"${{ inputs.repair_tag }}\", app-id: \"${{ vars.HIROBA_RELEASE_APP_ID }}\"}\n    secrets:\n      release-private-key: \"${{ secrets.HIROBA_RELEASE_PRIVATE_KEY }}\"\n    permissions: {contents: write, packages: write, id-token: write, attestations: write, actions: read, artifact-metadata: write}\n"
   },
   ".github/workflows/runtime-smoke.yml": {
     "mode": 420,
-    "content": "name: runtime smoke\non: {pull_request: {branches: [main]}}\npermissions: {contents: read}\njobs:\n  smoke:\n    uses: 7K-Hiroba/workflows/.github/workflows/test-runtime-smoke.yml@522c3530c94336249928f5a65a5a9f98c46bf540 # v1.1.0\n    with: {root: ., mode: local, profile: ci}\n"
+    "content": "name: runtime smoke\non: {pull_request: {branches: [main]}}\npermissions: {contents: read}\njobs:\n  smoke:\n    uses: 7K-Hiroba/workflows/.github/workflows/test-runtime-smoke.yml@f092eab6bb07de64a2d6f2e35ac4c65fca794f76 # v2.0.3\n    with: {root: ., mode: local, profile: ci}\n"
   },
   ".github/workflows/test-packages.yml": {
     "mode": 420,
-    "content": "name: package tests\non: {pull_request: {branches: [main]}}\npermissions: {contents: read}\njobs:\n  test:\n    uses: 7K-Hiroba/workflows/.github/workflows/test-packages.yml@522c3530c94336249928f5a65a5a9f98c46bf540 # v1.1.0\n    with: {root: .}\n"
+    "content": "name: package tests\non: {pull_request: {branches: [main]}}\npermissions: {contents: read}\njobs:\n  test:\n    uses: 7K-Hiroba/workflows/.github/workflows/test-packages.yml@f092eab6bb07de64a2d6f2e35ac4c65fca794f76 # v2.0.3\n    with: {root: .}\n"
   },
   ".github/workflows/validate.yml": {
     "mode": 420,
-    "content": "name: validate\non: {pull_request: {branches: [main]}, merge_group: {}}\npermissions: {contents: read}\njobs:\n  validate:\n    uses: 7K-Hiroba/workflows/.github/workflows/validate-packages.yml@522c3530c94336249928f5a65a5a9f98c46bf540 # v1.1.0\n    with: {root: .}\n"
+    "content": "name: validate\non: {pull_request: {branches: [main]}, merge_group: {}}\npermissions: {contents: read}\njobs:\n  validate:\n    uses: 7K-Hiroba/workflows/.github/workflows/validate-packages.yml@f092eab6bb07de64a2d6f2e35ac4c65fca794f76 # v2.0.3\n    with: {root: .}\n"
   },
   ".gitignore": {
     "mode": 420,
