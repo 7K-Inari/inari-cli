@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/7K-Inari/inari-cli/internal/config"
+	"gopkg.in/yaml.v3"
 )
 
 func TestHirobaInitFullAppOffline(t *testing.T) {
@@ -296,6 +297,48 @@ func TestStackScaffoldBindingScriptRejectsInvalidEvidence(t *testing.T) {
 			}
 			assertNoBindingTemporaryFiles(t, evidencePath)
 		})
+	}
+}
+
+func TestEdgeWorkflowIsDispatchOnly(t *testing.T) {
+	contents, err := os.ReadFile(filepath.Join("..", ".github", "workflows", "edge.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var workflow map[string]any
+	if err := yaml.Unmarshal(contents, &workflow); err != nil {
+		t.Fatalf("edge workflow does not parse: %v", err)
+	}
+	triggers, ok := workflow["on"].(map[string]any)
+	if !ok {
+		t.Fatalf("edge workflow triggers missing or malformed: %#v", workflow["on"])
+	}
+	if _, exists := triggers["push"]; exists {
+		t.Fatal("edge workflow must not trigger on push (merges must not create or move edge tags, channels, prereleases or artifacts)")
+	}
+	if _, exists := triggers["workflow_dispatch"]; !exists {
+		t.Fatal("edge workflow must remain manually dispatchable via workflow_dispatch")
+	}
+	perms, ok := workflow["permissions"].(map[string]any)
+	if !ok || len(perms) != 1 || perms["contents"] != "write" {
+		t.Fatalf("edge workflow permissions changed: %#v", workflow["permissions"])
+	}
+	for _, job := range []string{"gate", "version", "goreleaser"} {
+		if _, exists := workflow["jobs"].(map[string]any)[job]; !exists {
+			t.Fatalf("edge workflow lost job %q", job)
+		}
+	}
+	scaffold, err := os.ReadFile(filepath.Join("..", ".github", "workflows", "stack-scaffold.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"ref: f092eab6bb07de64a2d6f2e35ac4c65fca794f76 # v2.0.3",
+		"WORKFLOW_SHA: f092eab6bb07de64a2d6f2e35ac4c65fca794f76",
+	} {
+		if !strings.Contains(string(scaffold), want) {
+			t.Fatalf("stack scaffold workflow lost the signed producer pin %q", want)
+		}
 	}
 }
 
