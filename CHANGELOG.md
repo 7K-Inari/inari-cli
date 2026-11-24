@@ -1,5 +1,89 @@
 # Changelog
 
+## [0.5.0](https://github.com/7K-Inari/inari-cli/compare/v0.4.2...v0.5.0) (2026-11-24)
+
+
+### Features
+
+* add 'inari cluster connect' merging server-rendered kubeconfig ([#25](https://github.com/7K-Inari/inari-cli/issues/25)) ([8243b82](https://github.com/7K-Inari/inari-cli/commit/8243b82f9773d97f5fe2adce6568539d9bbdf7cc))
+* add 'inari git connect/list/status/disconnect' for per-user git social login ([fa4b141](https://github.com/7K-Inari/inari-cli/commit/fa4b14129141305d9c7a16b88e1b0e4e9dc7fe6e))
+* add 'inari git connect/list/status/disconnect' for per-user git social login ([40edf46](https://github.com/7K-Inari/inari-cli/commit/40edf4642d0d3b5ee9cf6491ab5b2941c69d9e33))
+* add full-matrix hiroba init scaffolding ([#55](https://github.com/7K-Inari/inari-cli/issues/55)) ([d6859ce](https://github.com/7K-Inari/inari-cli/commit/d6859ce7a26c4ba62a2c5c3b7e8896583677a3d4))
+* add observability deployment plan CLI ([fb84fb1](https://github.com/7K-Inari/inari-cli/commit/fb84fb11c97604ee22682c270e60be647b36e4dc))
+* add observability deployment plan CLI ([1e5194a](https://github.com/7K-Inari/inari-cli/commit/1e5194a7b2e69236daec37b3d178915192973650))
+* add verification policy CLI commands ([f5e3e96](https://github.com/7K-Inari/inari-cli/commit/f5e3e96ff614a7e41c9a141db2121a00384d6436))
+* **cli:** add verification policy and run commands ([2e4c8f9](https://github.com/7K-Inari/inari-cli/commit/2e4c8f967cb4fe726a5b9f1b2cdac3559bd8e6e4))
+* **extensions:** warn on scaffold contract skew ([0bb40ac](https://github.com/7K-Inari/inari-cli/commit/0bb40ac603505f1e4f33843b25f1e6b4aa4b98f2))
+* **extensions:** warn on scaffold contract skew ([cd1295d](https://github.com/7K-Inari/inari-cli/commit/cd1295dc9b513fe056a45d1b232e593b652a3f31))
+* generate classified stack lifecycle scaffolds ([bd1c0ec](https://github.com/7K-Inari/inari-cli/commit/bd1c0ec1e2f898eddc1d03736031644b941fa690))
+* generate classified stack lifecycle scaffolds ([2d7002a](https://github.com/7K-Inari/inari-cli/commit/2d7002a18578576a433301cb85c58697db6eb92d))
+* print admitted deploy artifact digest ([e90cdd0](https://github.com/7K-Inari/inari-cli/commit/e90cdd0f15bcf0044794ffab2504c3030cfd4c05))
+* **release:** per-merge edge releases (vX.Y.Z-&lt;sha&gt; + moving edge channel) ([#20](https://github.com/7K-Inari/inari-cli/issues/20)) ([1652f2a](https://github.com/7K-Inari/inari-cli/commit/1652f2ab9b7c558f84d2ed26b764075d647f7fee))
+* use source-qualified catalog identities ([b8fd5f0](https://github.com/7K-Inari/inari-cli/commit/b8fd5f0f006bbec843dd6ae668c8c1da13a59c59))
+* use source-qualified catalog identities ([f084120](https://github.com/7K-Inari/inari-cli/commit/f084120a990cde66a4f86535d28fd0093498aca6))
+
+
+### Bug Fixes
+
+* apply observability mode before initial preflight ([29fe6b9](https://github.com/7K-Inari/inari-cli/commit/29fe6b9ddbb76c28154f01431b0e3e8921aa55e4))
+* bind generated KRO source identities ([3cf800f](https://github.com/7K-Inari/inari-cli/commit/3cf800f5fde24eb39950842ba60c74ffbb731f92))
+* **cli:** accept server-issued cluster IDs (cluster:&lt;uuid&gt;) + contract test ([5afc5ae](https://github.com/7K-Inari/inari-cli/commit/5afc5aef61f6c2fe03b07be38a60eafced17d8bf))
+* **cli:** accept server-issued cluster IDs (cluster:&lt;uuid&gt;) + contract test ([fb2c000](https://github.com/7K-Inari/inari-cli/commit/fb2c00036a67134cb45dcf4085f232fb461c17e6))
+* default existing-instance observability to provision ([13ea3f0](https://github.com/7K-Inari/inari-cli/commit/13ea3f0e5f84c4cbd021e220bd74eac2a4dae494))
+* make edge releases dispatch-only ([5792485](https://github.com/7K-Inari/inari-cli/commit/57924856e7a45ecd3de5af896dd756f708609946))
+* pin generated stacks to workflows v2.0.3 ([fc9e3f6](https://github.com/7K-Inari/inari-cli/commit/fc9e3f66a3a79772c8b9ef023519a735597632dd))
+* prove generated stack revision convergence ([e18b5f7](https://github.com/7K-Inari/inari-cli/commit/e18b5f70ea07703a442112fc9db313f9b2ce577d))
+* remove unused deployment helper ([abefa6a](https://github.com/7K-Inari/inari-cli/commit/abefa6a419609d1f36bbbba9e797fcf38d9ae575))
+* resolve channel versions by semver ([3488405](https://github.com/7K-Inari/inari-cli/commit/348840512cc33081c9e8503f875d5d9dcb8c0d9e))
+* show unsigned warnings and artifact digests ([83bbec5](https://github.com/7K-Inari/inari-cli/commit/83bbec58ea9de598c1f0cfda0b62f76c8e2c79f6))
+
+
+### Documentation
+
+* add legal and community policies ([#52](https://github.com/7K-Inari/inari-cli/issues/52)) ([cac2d1a](https://github.com/7K-Inari/inari-cli/commit/cac2d1ab7bc70e4e5321ebd412c1f1a25cd6f769))
+* clarify generated PR evidence identity ([1905875](https://github.com/7K-Inari/inari-cli/commit/1905875261d8639ed06401f39741317d61025a60))
+
+
+### Miscellaneous Chores
+
+* advance corrected stack workflow pin ([3fb9a81](https://github.com/7K-Inari/inari-cli/commit/3fb9a8118d99221d32d5e2a4029af4220a7a6023))
+* advance QA-bound workflow pin ([6d0f993](https://github.com/7K-Inari/inari-cli/commit/6d0f9934a3e004f3dcd3db484bbc09cb3e270943))
+* advance stack workflow candidate pin ([3886202](https://github.com/7K-Inari/inari-cli/commit/388620223b0fe55f183fa936db2864792c5b773d))
+* **deps:** pin coordinated verification API contract ([0fe8158](https://github.com/7K-Inari/inari-cli/commit/0fe81584f7974c99b5717fe99ef627bd3bf1eb91))
+* **deps:** pin dependencies ([#21](https://github.com/7K-Inari/inari-cli/issues/21)) ([9417ed5](https://github.com/7K-Inari/inari-cli/commit/9417ed59580809ab1d1d8557dd82772deccf6fe9))
+* **deps:** pin inari-api to merged main (clusterids contract) ([c9ab1cd](https://github.com/7K-Inari/inari-cli/commit/c9ab1cd7f42e5c69067e438dc7b64c208bc7e37b))
+* **deps:** update actions/cache action to v6 ([#62](https://github.com/7K-Inari/inari-cli/issues/62)) ([7cc77ac](https://github.com/7K-Inari/inari-cli/commit/7cc77ac9158fe6d9511f3c203ee018cb2ce1f457))
+* **deps:** update actions/setup-go digest to d8cbb80 ([#54](https://github.com/7K-Inari/inari-cli/issues/54)) ([c3efd5f](https://github.com/7K-Inari/inari-cli/commit/c3efd5f1917d919e34203140d077df5aa274bbd3))
+* **deps:** update github-actions ([#24](https://github.com/7K-Inari/inari-cli/issues/24)) ([25d6349](https://github.com/7K-Inari/inari-cli/commit/25d6349f1b3e8ab6a0b14b86216e9e17b7c9f6a8))
+* **deps:** update github.com/7k-inari/inari-api digest to 1445c88 ([#26](https://github.com/7K-Inari/inari-cli/issues/26)) ([d1c1807](https://github.com/7K-Inari/inari-cli/commit/d1c180705dde10812b92b61d055de8a1eece7ea7))
+* **deps:** update github.com/7k-inari/inari-api digest to 1a30c6c ([#44](https://github.com/7K-Inari/inari-cli/issues/44)) ([ee68c43](https://github.com/7K-Inari/inari-cli/commit/ee68c431a83cc60888b43be44b84f1b7ee8df09d))
+* **deps:** update github.com/7k-inari/inari-api digest to 23396ef ([#34](https://github.com/7K-Inari/inari-cli/issues/34)) ([fb8772e](https://github.com/7K-Inari/inari-cli/commit/fb8772e175093e0eaffb8956d92b38f9acae132d))
+* **deps:** update github.com/7k-inari/inari-api digest to 2f3b0a2 ([#27](https://github.com/7K-Inari/inari-cli/issues/27)) ([6e8efc8](https://github.com/7K-Inari/inari-cli/commit/6e8efc8a25b8ec3d6c307bb2e690e6ee34d816f0))
+* **deps:** update github.com/7k-inari/inari-api digest to 30a4787 ([#40](https://github.com/7K-Inari/inari-cli/issues/40)) ([aab0e83](https://github.com/7K-Inari/inari-cli/commit/aab0e8329fca82f74d7bd28a4907a94652f937ae))
+* **deps:** update github.com/7k-inari/inari-api digest to 41c759c ([#29](https://github.com/7K-Inari/inari-cli/issues/29)) ([885b5ef](https://github.com/7K-Inari/inari-cli/commit/885b5efa7e91396adbeab1d1c8987d0b89a696ec))
+* **deps:** update github.com/7k-inari/inari-api digest to 490fc94 ([#32](https://github.com/7K-Inari/inari-cli/issues/32)) ([4d103f2](https://github.com/7K-Inari/inari-cli/commit/4d103f2998461bf51bec4fa6342f844a766410af))
+* **deps:** update github.com/7k-inari/inari-api digest to 5fd6198 ([#35](https://github.com/7K-Inari/inari-cli/issues/35)) ([5d9a2b0](https://github.com/7K-Inari/inari-cli/commit/5d9a2b0f57a6b87dc1f27d8fc05aab62ea415b1c))
+* **deps:** update github.com/7k-inari/inari-api digest to 6418011 ([#42](https://github.com/7K-Inari/inari-cli/issues/42)) ([8b50e28](https://github.com/7K-Inari/inari-cli/commit/8b50e2862f2d75a7964ea00d022cf9300e1389fd))
+* **deps:** update github.com/7k-inari/inari-api digest to 88af36a ([#31](https://github.com/7K-Inari/inari-cli/issues/31)) ([2b224b2](https://github.com/7K-Inari/inari-cli/commit/2b224b2c38edddb5d68f01e9ac1f1b1bf6355049))
+* **deps:** update github.com/7k-inari/inari-api digest to 9cafd93 ([#38](https://github.com/7K-Inari/inari-cli/issues/38)) ([8fd5daa](https://github.com/7K-Inari/inari-cli/commit/8fd5daa17293ac7bf634928ea86255f47cd45769))
+* **deps:** update github.com/7k-inari/inari-api digest to a5cf4ef ([#28](https://github.com/7K-Inari/inari-cli/issues/28)) ([5743563](https://github.com/7K-Inari/inari-cli/commit/57435630393f4068f2164155caa860d9325d3e56))
+* **deps:** update github.com/7k-inari/inari-api digest to c9b6ad5 ([#39](https://github.com/7K-Inari/inari-cli/issues/39)) ([0f9c21b](https://github.com/7K-Inari/inari-cli/commit/0f9c21b2bd6ae3676b27e2dbfad1fa4e79e1aee8))
+* **deps:** update github.com/7k-inari/inari-api digest to d8e9827 ([#41](https://github.com/7K-Inari/inari-cli/issues/41)) ([ad53f77](https://github.com/7K-Inari/inari-cli/commit/ad53f77add3020f70f8b96871c386d63f31298a1))
+* **deps:** update github.com/7k-inari/inari-api digest to f311c23 ([#33](https://github.com/7K-Inari/inari-cli/issues/33)) ([e4acce3](https://github.com/7K-Inari/inari-cli/commit/e4acce3c8c9c8e6a266ad8e588aaa22c894a031c))
+* **deps:** update github.com/7k-inari/inari-api digest to f953def ([#36](https://github.com/7K-Inari/inari-cli/issues/36)) ([cb66429](https://github.com/7K-Inari/inari-cli/commit/cb664293694dbe428d9b30a800defd1ef7bb00ef))
+* **deps:** update goreleaser/goreleaser-action digest to a4f02ab ([#37](https://github.com/7K-Inari/inari-cli/issues/37)) ([e9594e1](https://github.com/7K-Inari/inari-cli/commit/e9594e10806405a9c451cdbadd3f3813203b26da))
+* **deps:** update module github.com/7k-inari/inari-api to v0.6.0 ([#22](https://github.com/7K-Inari/inari-cli/issues/22)) ([301a2fa](https://github.com/7K-Inari/inari-cli/commit/301a2fa947d8f4360e7181cdca14a718816fb20b))
+* **deps:** update module github.com/7k-inari/inari-api to v0.7.0-180bdb0 ([#45](https://github.com/7K-Inari/inari-cli/issues/45)) ([a782d34](https://github.com/7K-Inari/inari-cli/commit/a782d34dec90edb6a021bfcb2261116ba6429853))
+* **deps:** update module github.com/7k-inari/inari-api to v0.7.0-ace8d88 ([#46](https://github.com/7K-Inari/inari-cli/issues/46)) ([79c915f](https://github.com/7K-Inari/inari-cli/commit/79c915fdcc59de561779c2e0c363fa9073912eea))
+* **deps:** update module github.com/7k-inari/inari-api to v0.7.0-c2fef8b ([#47](https://github.com/7K-Inari/inari-cli/issues/47)) ([2e359de](https://github.com/7K-Inari/inari-cli/commit/2e359de01db04bcfb2ac733d22b9168eea8b03ed))
+* **deps:** update module github.com/7k-inari/inari-api to v0.7.0-d1dc5a2 ([#48](https://github.com/7K-Inari/inari-cli/issues/48)) ([57fc822](https://github.com/7K-Inari/inari-cli/commit/57fc82260f4df7152b91294bf77aea2a4086aa60))
+* **deps:** update module github.com/7k-inari/inari-api to v0.7.0-f0bdbad ([#51](https://github.com/7K-Inari/inari-cli/issues/51)) ([2cc1d17](https://github.com/7K-Inari/inari-cli/commit/2cc1d1706c69658731ba99df696e838e8d3611a8))
+* **deps:** update module github.com/7k-inari/inari-api to v0.8.0-b5e7e0b ([#58](https://github.com/7K-Inari/inari-cli/issues/58)) ([d970bd0](https://github.com/7K-Inari/inari-cli/commit/d970bd00d176379724099fa265420040d7eb8968))
+* **deps:** update module golang.org/x/net to v0.62.0 [security] ([#50](https://github.com/7K-Inari/inari-cli/issues/50)) ([590fa92](https://github.com/7K-Inari/inari-cli/commit/590fa92d3781a97339fbd37ee4dd649959e2975f))
+* **deps:** update module k8s.io/client-go to v0.37.2 ([#49](https://github.com/7K-Inari/inari-cli/issues/49)) ([498547b](https://github.com/7K-Inari/inari-cli/commit/498547be7f34765dbe768071833d7e9aa58d79c2))
+* group+automerge non-major renovate PRs, ignore deferred majors ([#43](https://github.com/7K-Inari/inari-cli/issues/43)) ([6e535f5](https://github.com/7K-Inari/inari-cli/commit/6e535f5269ac28014b3e0588a0af0620a1d9bdb2))
+* pin stack scaffolds to reviewed workflow candidate ([36d5569](https://github.com/7K-Inari/inari-cli/commit/36d5569c6a04487f052fbbb7103f6a3fce870a2a))
+
 ## [0.4.2](https://github.com/7K-Inari/inari-cli/compare/v0.4.1...v0.4.2) (2026-09-15)
 
 
