@@ -1,7 +1,7 @@
 replicaCount: 1
 image:
   repository: nginxinc/nginx-unprivileged
-  tag: "1.29.4"
+  tag: "1.31.7"
   digest: "sha256:c38007e929d1d368ea26df1b696bfc5655e274db11f755fad63c25950a157423"
   pullPolicy: IfNotPresent
 service:

@@ -3,14 +3,14 @@ module github.com/7K-Inari/inari-cli
 go 1.26.3
 
 require (
-	github.com/7K-Inari/inari-api v0.8.0-b5e7e0b.0.20261121184651-f2249048ba73
+	github.com/7K-Inari/inari-api v0.8.0-f224904
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/google/uuid v1.6.0
 	github.com/spf13/cobra v1.10.2
-	golang.org/x/mod v0.41.0
+	golang.org/x/mod v0.43.0
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/client-go v0.37.2
+	k8s.io/client-go v0.37.3
 )
 
 require (
@@ -44,7 +44,7 @@ require (
 	golang.org/x/text v0.43.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	k8s.io/apimachinery v0.37.2 // indirect
+	k8s.io/apimachinery v0.37.3 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20260721132016-d427ff9ee9ad // indirect
 	k8s.io/utils v0.0.0-20260626114624-be93311217bd // indirect

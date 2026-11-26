@@ -1,11 +1,11 @@
-FROM golang:1.26.3-bookworm@sha256:3bf5b04541eb4a37fe62aa1bc9c98a1dec09db9d2e79c1d2eb54e3c9d08dbca9 AS build
+FROM golang:1.27.4-bookworm@sha256:8c4f7ee39e95f12739404475e5be21f2be462ddeb4470eb0f88f5edbd330a375 AS build
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/__HIROBA_NAME__ ./cmd/__HIROBA_NAME__
 
-FROM gcr.io/distroless/static-debian13:nonroot@sha256:816dc4d589459a7fe33b8a2e69edb70da56ffad7161f4b415937fa2bfe7e92e8
+FROM gcr.io/distroless/static-debian13:nonroot@sha256:89e00a7e78df216bcbf495e7f43135f03ddbd3e98024a4104731872d6c8cf3c6
 COPY --from=build /out/__HIROBA_NAME__ /usr/local/bin/__HIROBA_NAME__
 ENV SCAFFOLD_HTTP=true
 EXPOSE 8080

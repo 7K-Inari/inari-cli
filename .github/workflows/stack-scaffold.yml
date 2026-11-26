@@ -14,7 +14,7 @@ jobs:
           repository: 7K-Hiroba/workflows
           ref: f092eab6bb07de64a2d6f2e35ac4c65fca794f76 # v2.0.3
           path: .hiroba/workflows
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7
         with: {go-version: "1.26.3", cache: false}
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         with: {python-version: "3.11"}

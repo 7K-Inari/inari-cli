@@ -12,17 +12,17 @@
     "test:browser": "playwright test"
   },
   "dependencies": {
-    "@7k-inari/ui-plugin-sdk": "0.1.8",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
+    "@7k-inari/ui-plugin-sdk": "0.1.9",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "@playwright/test": "1.58.2",
-    "@types/node": "26.0.0",
-    "@types/react": "19.3.0",
+    "@playwright/test": "1.65.1",
+    "@types/node": "26.6.11",
+    "@types/react": "19.3.3",
     "@types/react-dom": "19.3.0",
     "typescript": "5.9.3",
-    "vitest": "5.0.0"
+    "vitest": "5.1.2"
   }
 }
